@@ -31,6 +31,13 @@ java -jar openapi-generator-cli.jar generate -i openapi.yaml -g typescript-axios
 3. Run `dotnet restore` to restore the necessary packages.
 4. Configure your AWS credentials and region by running `aws configure`.
 
+### Test Serverless Endpoints
+
+1. Debug build `dotnet build -c Debug`
+2. Launch Serverless Offline UI Test Dashboard `dotnet lambda-test-tool-6.0`
+3. You can send HTTP(S) requests to the indicated localhost endpoint
+
+
 ### Deployment
 
 1. Publish the project with `dotnet publish -c Release`.
