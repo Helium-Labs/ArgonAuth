@@ -16,7 +16,6 @@ Generate the client in the language of choice, with the openapi-generator.
 java -jar openapi-generator-cli.jar generate -i openapi.yaml -g typescript-axios -o ./TypescriptAxios 
 ```
 
-
 ## Getting Started
 
 ### Prerequisites
