@@ -1,0 +1,24 @@
+service: aspnetcore-webapi
+
+provider:
+  name: aws
+  runtime: dotnet6
+
+plugins:
+  - serverless-aws-local-dotnet
+  - serverless-offline
+
+functions:
+  AspNetCoreFunction:
+    handler: RelyingParty::RelyingParty.LambdaEntryPoint::FunctionHandlerAsync
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+      - http:
+          path: /
+          method: ANY
+
+custom:
+  aws-local-dotnet:
+    src: RelyingParty/src/RelyingParty/bin/Release/net6.0/RelyingParty.dll
