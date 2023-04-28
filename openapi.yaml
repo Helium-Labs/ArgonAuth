@@ -1,0 +1,97 @@
+openapi: 3.0.0
+info:
+  title: FIDO2 WebAuthn API
+  version: 1.0.0
+paths:
+  /makeCredentialOptions:
+    post:
+      summary: Generate credential options for registration
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                displayName:
+                  type: string
+                attType:
+                  type: string
+                authType:
+                  type: string
+                residentKey:
+                  type: string
+                userVerification:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialCreateOptions'
+  /makeCredential:
+    post:
+      summary: Register a new credential
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatorAttestationRawResponse'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialMakeResult'
+  /assertionOptions:
+    post:
+      summary: Generate assertion options for authentication
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                userVerification:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssertionOptions'
+  /makeAssertion:
+    post:
+      summary: Authenticate a user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatorAssertionRawResponse'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssertionVerificationResult'
+components:
+  schemas:
+    CredentialCreateOptions:
+      type: object
+    AuthenticatorAttestationRawResponse:
+      type: object
+    CredentialMakeResult:
+      type: object
+    AssertionOptions:
+      type: object
+    AuthenticatorAssertionRawResponse:
+      type: object
+    AssertionVerificationResult:
+      type: object
