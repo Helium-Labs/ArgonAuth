@@ -39,7 +39,7 @@ paths:
       summary: Generate credential options for registration
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:
@@ -82,7 +82,7 @@ paths:
       summary: Generate assertion options for authentication
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
               properties:

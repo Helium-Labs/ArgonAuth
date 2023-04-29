@@ -36,12 +36,12 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeCredentialOptions")]
-    public JsonResult MakeCredentialOptions([FromForm] string username,
-                                            [FromForm] string displayName,
-                                            [FromForm] string attType,
-                                            [FromForm] string authType,
-                                            [FromForm] string residentKey,
-                                            [FromForm] string userVerification)
+    public JsonResult MakeCredentialOptions([FromBody] string username,
+                                            [FromBody] string displayName,
+                                            [FromBody] string attType,
+                                            [FromBody] string authType,
+                                            [FromBody] string residentKey,
+                                            [FromBody] string userVerification)
     {
         try
         {
@@ -145,7 +145,7 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/assertionOptions")]
-    public ActionResult AssertionOptionsPost([FromForm] string username, [FromForm] string userVerification)
+    public ActionResult AssertionOptionsPost([FromBody] string username, [FromBody] string userVerification)
     {
         try
         {
