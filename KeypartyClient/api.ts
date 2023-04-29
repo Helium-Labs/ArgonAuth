@@ -21,6 +21,68 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } from './base';
 
+/**
+ * 
+ * @export
+ * @interface InlineObject
+ */
+export interface InlineObject {
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject
+     */
+    'username'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject
+     */
+    'displayName'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject
+     */
+    'attType'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject
+     */
+    'authType'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject
+     */
+    'residentKey'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject
+     */
+    'userVerification'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface InlineObject1
+ */
+export interface InlineObject1 {
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject1
+     */
+    'username'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof InlineObject1
+     */
+    'userVerification'?: string;
+}
 
 /**
  * DefaultApi - axios parameter creator
@@ -31,12 +93,11 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         /**
          * 
          * @summary Generate assertion options for authentication
-         * @param {string} [username] 
-         * @param {string} [userVerification] 
+         * @param {InlineObject1} [inlineObject1] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        assertionOptionsPost: async (username?: string, userVerification?: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        assertionOptionsPost: async (inlineObject1?: InlineObject1, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/assertionOptions`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -48,24 +109,15 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
-            const localVarFormParams = new URLSearchParams();
 
 
-            if (username !== undefined) { 
-                localVarFormParams.set('username', username as any);
-            }
     
-            if (userVerification !== undefined) { 
-                localVarFormParams.set('userVerification', userVerification as any);
-            }
-    
-    
-            localVarHeaderParameter['Content-Type'] = 'application/x-www-form-urlencoded';
-    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = localVarFormParams.toString();
+            localVarRequestOptions.data = serializeDataIfNeeded(inlineObject1, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -109,16 +161,11 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         /**
          * 
          * @summary Generate credential options for registration
-         * @param {string} [username] 
-         * @param {string} [displayName] 
-         * @param {string} [attType] 
-         * @param {string} [authType] 
-         * @param {string} [residentKey] 
-         * @param {string} [userVerification] 
+         * @param {InlineObject} [inlineObject] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeCredentialOptionsPost: async (username?: string, displayName?: string, attType?: string, authType?: string, residentKey?: string, userVerification?: string, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        makeCredentialOptionsPost: async (inlineObject?: InlineObject, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/makeCredentialOptions`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -130,40 +177,15 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
-            const localVarFormParams = new URLSearchParams();
 
 
-            if (username !== undefined) { 
-                localVarFormParams.set('username', username as any);
-            }
     
-            if (displayName !== undefined) { 
-                localVarFormParams.set('displayName', displayName as any);
-            }
-    
-            if (attType !== undefined) { 
-                localVarFormParams.set('attType', attType as any);
-            }
-    
-            if (authType !== undefined) { 
-                localVarFormParams.set('authType', authType as any);
-            }
-    
-            if (residentKey !== undefined) { 
-                localVarFormParams.set('residentKey', residentKey as any);
-            }
-    
-            if (userVerification !== undefined) { 
-                localVarFormParams.set('userVerification', userVerification as any);
-            }
-    
-    
-            localVarHeaderParameter['Content-Type'] = 'application/x-www-form-urlencoded';
-    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = localVarFormParams.toString();
+            localVarRequestOptions.data = serializeDataIfNeeded(inlineObject, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -283,13 +305,12 @@ export const DefaultApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Generate assertion options for authentication
-         * @param {string} [username] 
-         * @param {string} [userVerification] 
+         * @param {InlineObject1} [inlineObject1] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async assertionOptionsPost(username?: string, userVerification?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.assertionOptionsPost(username, userVerification, options);
+        async assertionOptionsPost(inlineObject1?: InlineObject1, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.assertionOptionsPost(inlineObject1, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -306,17 +327,12 @@ export const DefaultApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Generate credential options for registration
-         * @param {string} [username] 
-         * @param {string} [displayName] 
-         * @param {string} [attType] 
-         * @param {string} [authType] 
-         * @param {string} [residentKey] 
-         * @param {string} [userVerification] 
+         * @param {InlineObject} [inlineObject] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async makeCredentialOptionsPost(username?: string, displayName?: string, attType?: string, authType?: string, residentKey?: string, userVerification?: string, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.makeCredentialOptionsPost(username, displayName, attType, authType, residentKey, userVerification, options);
+        async makeCredentialOptionsPost(inlineObject?: InlineObject, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.makeCredentialOptionsPost(inlineObject, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -364,13 +380,12 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
         /**
          * 
          * @summary Generate assertion options for authentication
-         * @param {string} [username] 
-         * @param {string} [userVerification] 
+         * @param {InlineObject1} [inlineObject1] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        assertionOptionsPost(username?: string, userVerification?: string, options?: any): AxiosPromise<object> {
-            return localVarFp.assertionOptionsPost(username, userVerification, options).then((request) => request(axios, basePath));
+        assertionOptionsPost(inlineObject1?: InlineObject1, options?: any): AxiosPromise<object> {
+            return localVarFp.assertionOptionsPost(inlineObject1, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -385,17 +400,12 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
         /**
          * 
          * @summary Generate credential options for registration
-         * @param {string} [username] 
-         * @param {string} [displayName] 
-         * @param {string} [attType] 
-         * @param {string} [authType] 
-         * @param {string} [residentKey] 
-         * @param {string} [userVerification] 
+         * @param {InlineObject} [inlineObject] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeCredentialOptionsPost(username?: string, displayName?: string, attType?: string, authType?: string, residentKey?: string, userVerification?: string, options?: any): AxiosPromise<object> {
-            return localVarFp.makeCredentialOptionsPost(username, displayName, attType, authType, residentKey, userVerification, options).then((request) => request(axios, basePath));
+        makeCredentialOptionsPost(inlineObject?: InlineObject, options?: any): AxiosPromise<object> {
+            return localVarFp.makeCredentialOptionsPost(inlineObject, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -439,14 +449,13 @@ export class DefaultApi extends BaseAPI {
     /**
      * 
      * @summary Generate assertion options for authentication
-     * @param {string} [username] 
-     * @param {string} [userVerification] 
+     * @param {InlineObject1} [inlineObject1] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApi
      */
-    public assertionOptionsPost(username?: string, userVerification?: string, options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).assertionOptionsPost(username, userVerification, options).then((request) => request(this.axios, this.basePath));
+    public assertionOptionsPost(inlineObject1?: InlineObject1, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).assertionOptionsPost(inlineObject1, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -464,18 +473,13 @@ export class DefaultApi extends BaseAPI {
     /**
      * 
      * @summary Generate credential options for registration
-     * @param {string} [username] 
-     * @param {string} [displayName] 
-     * @param {string} [attType] 
-     * @param {string} [authType] 
-     * @param {string} [residentKey] 
-     * @param {string} [userVerification] 
+     * @param {InlineObject} [inlineObject] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApi
      */
-    public makeCredentialOptionsPost(username?: string, displayName?: string, attType?: string, authType?: string, residentKey?: string, userVerification?: string, options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).makeCredentialOptionsPost(username, displayName, attType, authType, residentKey, userVerification, options).then((request) => request(this.axios, this.basePath));
+    public makeCredentialOptionsPost(inlineObject?: InlineObject, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).makeCredentialOptionsPost(inlineObject, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
