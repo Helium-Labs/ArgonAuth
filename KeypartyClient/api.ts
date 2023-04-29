@@ -24,65 +24,605 @@ import { BASE_PATH, COLLECTION_FORMATS, RequestArgs, BaseAPI, RequiredError } fr
 /**
  * 
  * @export
- * @interface InlineObject
+ * @interface AssertionOptions
  */
-export interface InlineObject {
+export interface AssertionOptions {
     /**
      * 
      * @type {string}
-     * @memberof InlineObject
+     * @memberof AssertionOptions
+     */
+    'challenge': string;
+    /**
+     * 
+     * @type {number}
+     * @memberof AssertionOptions
+     */
+    'timeout': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionOptions
+     */
+    'rpId'?: string;
+    /**
+     * 
+     * @type {Array<PublicKeyCredentialDescriptor>}
+     * @memberof AssertionOptions
+     */
+    'allowCredentials'?: Array<PublicKeyCredentialDescriptor>;
+    /**
+     * 
+     * @type {UserVerificationRequirement}
+     * @memberof AssertionOptions
+     */
+    'userVerification'?: UserVerificationRequirement;
+    /**
+     * 
+     * @type {AuthenticationExtensionsClientInputs}
+     * @memberof AssertionOptions
+     */
+    'extensions'?: AuthenticationExtensionsClientInputs;
+}
+/**
+ * 
+ * @export
+ * @interface AssertionOptionsRequest
+ */
+export interface AssertionOptionsRequest {
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionOptionsRequest
      */
     'username'?: string;
     /**
      * 
      * @type {string}
-     * @memberof InlineObject
-     */
-    'displayName'?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof InlineObject
-     */
-    'attType'?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof InlineObject
-     */
-    'authType'?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof InlineObject
-     */
-    'residentKey'?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof InlineObject
+     * @memberof AssertionOptionsRequest
      */
     'userVerification'?: string;
 }
 /**
  * 
  * @export
- * @interface InlineObject1
+ * @interface AssertionResponse
  */
-export interface InlineObject1 {
+export interface AssertionResponse {
     /**
      * 
      * @type {string}
-     * @memberof InlineObject1
+     * @memberof AssertionResponse
+     */
+    'authenticatorData': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionResponse
+     */
+    'signature': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionResponse
+     */
+    'clientDataJSON': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionResponse
+     */
+    'userHandle'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface AssertionVerificationResult
+ */
+export interface AssertionVerificationResult {
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionVerificationResult
+     */
+    'status': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionVerificationResult
+     */
+    'errorMessage': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionVerificationResult
+     */
+    'credentialId': string;
+    /**
+     * 
+     * @type {number}
+     * @memberof AssertionVerificationResult
+     */
+    'counter': number;
+}
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export enum AttestationConveyancePreference {
+    None = 'none',
+    Indirect = 'indirect',
+    Direct = 'direct'
+}
+
+/**
+ * 
+ * @export
+ * @interface AuthenticationExtensionsClientInputs
+ */
+export interface AuthenticationExtensionsClientInputs {
+    /**
+     * 
+     * @type {object}
+     * @memberof AuthenticationExtensionsClientInputs
+     */
+    'example.extension'?: object;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticationExtensionsClientInputs
+     */
+    'appid'?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof AuthenticationExtensionsClientInputs
+     */
+    'authnSel'?: Array<string>;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof AuthenticationExtensionsClientInputs
+     */
+    'exts'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof AuthenticationExtensionsClientInputs
+     */
+    'uvm'?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface AuthenticationExtensionsClientOutputs
+ */
+export interface AuthenticationExtensionsClientOutputs {
+    /**
+     * 
+     * @type {object}
+     * @memberof AuthenticationExtensionsClientOutputs
+     */
+    'example.extension'?: object;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof AuthenticationExtensionsClientOutputs
+     */
+    'appid'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof AuthenticationExtensionsClientOutputs
+     */
+    'authnSel'?: boolean;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof AuthenticationExtensionsClientOutputs
+     */
+    'exts'?: Array<string>;
+    /**
+     * 
+     * @type {Array<Array<number>>}
+     * @memberof AuthenticationExtensionsClientOutputs
+     */
+    'uvm'?: Array<Array<number>>;
+}
+/**
+ * 
+ * @export
+ * @interface AuthenticatorAssertionRawResponse
+ */
+export interface AuthenticatorAssertionRawResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticatorAssertionRawResponse
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticatorAssertionRawResponse
+     */
+    'rawId': string;
+    /**
+     * 
+     * @type {AssertionResponse}
+     * @memberof AuthenticatorAssertionRawResponse
+     */
+    'response': AssertionResponse;
+    /**
+     * 
+     * @type {PublicKeyCredentialType}
+     * @memberof AuthenticatorAssertionRawResponse
+     */
+    'type'?: PublicKeyCredentialType;
+    /**
+     * 
+     * @type {AuthenticationExtensionsClientOutputs}
+     * @memberof AuthenticatorAssertionRawResponse
+     */
+    'extensions'?: AuthenticationExtensionsClientOutputs;
+}
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export enum AuthenticatorAttachment {
+    Platform = 'platform',
+    CrossPlatform = 'cross-platform'
+}
+
+/**
+ * 
+ * @export
+ * @interface AuthenticatorAttestationRawResponse
+ */
+export interface AuthenticatorAttestationRawResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticatorAttestationRawResponse
+     */
+    'id'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticatorAttestationRawResponse
+     */
+    'rawId'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticatorAttestationRawResponse
+     */
+    'type'?: AuthenticatorAttestationRawResponseTypeEnum;
+    /**
+     * 
+     * @type {AuthenticatorAttestationRawResponseResponse}
+     * @memberof AuthenticatorAttestationRawResponse
+     */
+    'response'?: AuthenticatorAttestationRawResponseResponse;
+    /**
+     * 
+     * @type {AuthenticationExtensionsClientOutputs}
+     * @memberof AuthenticatorAttestationRawResponse
+     */
+    'extensions'?: AuthenticationExtensionsClientOutputs;
+}
+
+/**
+    * @export
+    * @enum {string}
+    */
+export enum AuthenticatorAttestationRawResponseTypeEnum {
+    PublicKey = 'public-key'
+}
+
+/**
+ * 
+ * @export
+ * @interface AuthenticatorAttestationRawResponseResponse
+ */
+export interface AuthenticatorAttestationRawResponseResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticatorAttestationRawResponseResponse
+     */
+    'attestationObject'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticatorAttestationRawResponseResponse
+     */
+    'clientDataJSON'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface AuthenticatorSelection
+ */
+export interface AuthenticatorSelection {
+    /**
+     * 
+     * @type {AuthenticatorAttachment}
+     * @memberof AuthenticatorSelection
+     */
+    'authenticatorAttachment'?: AuthenticatorAttachment;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof AuthenticatorSelection
+     */
+    'requireResidentKey'?: boolean;
+    /**
+     * 
+     * @type {UserVerificationRequirement}
+     * @memberof AuthenticatorSelection
+     */
+    'userVerification'?: UserVerificationRequirement;
+}
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export enum AuthenticatorTransport {
+    Usb = 'usb',
+    Nfc = 'nfc',
+    Ble = 'ble',
+    Internal = 'internal'
+}
+
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export enum COSEAlgorithm {
+    NUMBER_MINUS_65535 = -65535,
+    NUMBER_MINUS_259 = -259,
+    NUMBER_MINUS_258 = -258,
+    NUMBER_MINUS_257 = -257,
+    NUMBER_MINUS_39 = -39,
+    NUMBER_MINUS_38 = -38,
+    NUMBER_MINUS_37 = -37,
+    NUMBER_MINUS_36 = -36,
+    NUMBER_MINUS_35 = -35,
+    NUMBER_MINUS_8 = -8,
+    NUMBER_MINUS_7 = -7,
+    NUMBER_MINUS_47 = -47
+}
+
+/**
+ * 
+ * @export
+ * @interface CredentialCreateOptions
+ */
+export interface CredentialCreateOptions {
+    /**
+     * 
+     * @type {PublicKeyCredentialRpEntity}
+     * @memberof CredentialCreateOptions
+     */
+    'rp'?: PublicKeyCredentialRpEntity;
+    /**
+     * 
+     * @type {Fido2User}
+     * @memberof CredentialCreateOptions
+     */
+    'user'?: Fido2User;
+    /**
+     * 
+     * @type {string}
+     * @memberof CredentialCreateOptions
+     */
+    'challenge'?: string;
+    /**
+     * 
+     * @type {Array<PubKeyCredParam>}
+     * @memberof CredentialCreateOptions
+     */
+    'pubKeyCredParams'?: Array<PubKeyCredParam>;
+    /**
+     * 
+     * @type {number}
+     * @memberof CredentialCreateOptions
+     */
+    'timeout'?: number;
+    /**
+     * 
+     * @type {AttestationConveyancePreference}
+     * @memberof CredentialCreateOptions
+     */
+    'attestation'?: AttestationConveyancePreference;
+    /**
+     * 
+     * @type {AuthenticatorSelection}
+     * @memberof CredentialCreateOptions
+     */
+    'authenticatorSelection'?: AuthenticatorSelection;
+    /**
+     * 
+     * @type {Array<PublicKeyCredentialDescriptor>}
+     * @memberof CredentialCreateOptions
+     */
+    'excludeCredentials'?: Array<PublicKeyCredentialDescriptor>;
+    /**
+     * 
+     * @type {AuthenticationExtensionsClientInputs}
+     * @memberof CredentialCreateOptions
+     */
+    'extensions'?: AuthenticationExtensionsClientInputs;
+}
+/**
+ * 
+ * @export
+ * @interface Fido2User
+ */
+export interface Fido2User {
+    /**
+     * 
+     * @type {string}
+     * @memberof Fido2User
+     */
+    'name'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Fido2User
+     */
+    'id'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Fido2User
+     */
+    'displayName'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface MakeCredentialOptions
+ */
+export interface MakeCredentialOptions {
+    /**
+     * 
+     * @type {string}
+     * @memberof MakeCredentialOptions
      */
     'username'?: string;
     /**
      * 
      * @type {string}
-     * @memberof InlineObject1
+     * @memberof MakeCredentialOptions
+     */
+    'displayName'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MakeCredentialOptions
+     */
+    'attType'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MakeCredentialOptions
+     */
+    'authType'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MakeCredentialOptions
+     */
+    'residentKey'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MakeCredentialOptions
      */
     'userVerification'?: string;
 }
+/**
+ * 
+ * @export
+ * @interface PubKeyCredParam
+ */
+export interface PubKeyCredParam {
+    /**
+     * 
+     * @type {PublicKeyCredentialType}
+     * @memberof PubKeyCredParam
+     */
+    'type'?: PublicKeyCredentialType;
+    /**
+     * 
+     * @type {COSEAlgorithm}
+     * @memberof PubKeyCredParam
+     */
+    'alg'?: COSEAlgorithm;
+}
+/**
+ * 
+ * @export
+ * @interface PublicKeyCredentialDescriptor
+ */
+export interface PublicKeyCredentialDescriptor {
+    /**
+     * 
+     * @type {PublicKeyCredentialType}
+     * @memberof PublicKeyCredentialDescriptor
+     */
+    'type'?: PublicKeyCredentialType;
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicKeyCredentialDescriptor
+     */
+    'id'?: string;
+    /**
+     * 
+     * @type {Array<AuthenticatorTransport>}
+     * @memberof PublicKeyCredentialDescriptor
+     */
+    'transports'?: Array<AuthenticatorTransport> | null;
+}
+/**
+ * 
+ * @export
+ * @interface PublicKeyCredentialRpEntity
+ */
+export interface PublicKeyCredentialRpEntity {
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicKeyCredentialRpEntity
+     */
+    'id'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicKeyCredentialRpEntity
+     */
+    'name'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicKeyCredentialRpEntity
+     */
+    'icon'?: string | null;
+}
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export enum PublicKeyCredentialType {
+    PublicKey = 'public-key'
+}
+
+/**
+ * 
+ * @export
+ * @enum {string}
+ */
+
+export enum UserVerificationRequirement {
+    Required = 'required',
+    Preferred = 'preferred',
+    Discouraged = 'discouraged'
+}
+
 
 /**
  * DefaultApi - axios parameter creator
@@ -93,12 +633,14 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         /**
          * 
          * @summary Generate assertion options for authentication
-         * @param {InlineObject1} [inlineObject1] 
+         * @param {AssertionOptionsRequest} assertionOptionsRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        assertionOptionsPost: async (inlineObject1?: InlineObject1, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/assertionOptions`;
+        apiFido2AssertionOptionsPost: async (assertionOptionsRequest: AssertionOptionsRequest, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'assertionOptionsRequest' is not null or undefined
+            assertParamExists('apiFido2AssertionOptionsPost', 'assertionOptionsRequest', assertionOptionsRequest)
+            const localVarPath = `/api/Fido2/assertionOptions`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -117,7 +659,7 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(inlineObject1, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(assertionOptionsRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -127,12 +669,12 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         /**
          * 
          * @summary Authenticate a user
-         * @param {object} [body] 
+         * @param {AuthenticatorAssertionRawResponse} [authenticatorAssertionRawResponse] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeAssertionPost: async (body?: object, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/makeAssertion`;
+        apiFido2MakeAssertionPost: async (authenticatorAssertionRawResponse?: AuthenticatorAssertionRawResponse, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/Fido2/makeAssertion`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -151,7 +693,7 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(body, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(authenticatorAssertionRawResponse, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -161,12 +703,14 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         /**
          * 
          * @summary Generate credential options for registration
-         * @param {InlineObject} [inlineObject] 
+         * @param {MakeCredentialOptions} makeCredentialOptions 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeCredentialOptionsPost: async (inlineObject?: InlineObject, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/makeCredentialOptions`;
+        apiFido2MakeCredentialOptionsPost: async (makeCredentialOptions: MakeCredentialOptions, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'makeCredentialOptions' is not null or undefined
+            assertParamExists('apiFido2MakeCredentialOptionsPost', 'makeCredentialOptions', makeCredentialOptions)
+            const localVarPath = `/api/Fido2/makeCredentialOptions`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -185,7 +729,7 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(inlineObject, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(makeCredentialOptions, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -195,12 +739,14 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
         /**
          * 
          * @summary Register a new credential
-         * @param {object} [body] 
+         * @param {AuthenticatorAttestationRawResponse} authenticatorAttestationRawResponse 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeCredentialPost: async (body?: object, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/makeCredential`;
+        apiFido2MakeCredentialPost: async (authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'authenticatorAttestationRawResponse' is not null or undefined
+            assertParamExists('apiFido2MakeCredentialPost', 'authenticatorAttestationRawResponse', authenticatorAttestationRawResponse)
+            const localVarPath = `/api/Fido2/makeCredential`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -219,7 +765,7 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(body, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(authenticatorAttestationRawResponse, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -305,45 +851,45 @@ export const DefaultApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Generate assertion options for authentication
-         * @param {InlineObject1} [inlineObject1] 
+         * @param {AssertionOptionsRequest} assertionOptionsRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async assertionOptionsPost(inlineObject1?: InlineObject1, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.assertionOptionsPost(inlineObject1, options);
+        async apiFido2AssertionOptionsPost(assertionOptionsRequest: AssertionOptionsRequest, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AssertionOptions>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiFido2AssertionOptionsPost(assertionOptionsRequest, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
          * 
          * @summary Authenticate a user
-         * @param {object} [body] 
+         * @param {AuthenticatorAssertionRawResponse} [authenticatorAssertionRawResponse] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async makeAssertionPost(body?: object, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.makeAssertionPost(body, options);
+        async apiFido2MakeAssertionPost(authenticatorAssertionRawResponse?: AuthenticatorAssertionRawResponse, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AssertionVerificationResult>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiFido2MakeAssertionPost(authenticatorAssertionRawResponse, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
          * 
          * @summary Generate credential options for registration
-         * @param {InlineObject} [inlineObject] 
+         * @param {MakeCredentialOptions} makeCredentialOptions 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async makeCredentialOptionsPost(inlineObject?: InlineObject, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.makeCredentialOptionsPost(inlineObject, options);
+        async apiFido2MakeCredentialOptionsPost(makeCredentialOptions: MakeCredentialOptions, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CredentialCreateOptions>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiFido2MakeCredentialOptionsPost(makeCredentialOptions, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
          * 
          * @summary Register a new credential
-         * @param {object} [body] 
+         * @param {AuthenticatorAttestationRawResponse} authenticatorAttestationRawResponse 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async makeCredentialPost(body?: object, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.makeCredentialPost(body, options);
+        async apiFido2MakeCredentialPost(authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.apiFido2MakeCredentialPost(authenticatorAttestationRawResponse, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
@@ -380,42 +926,42 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
         /**
          * 
          * @summary Generate assertion options for authentication
-         * @param {InlineObject1} [inlineObject1] 
+         * @param {AssertionOptionsRequest} assertionOptionsRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        assertionOptionsPost(inlineObject1?: InlineObject1, options?: any): AxiosPromise<object> {
-            return localVarFp.assertionOptionsPost(inlineObject1, options).then((request) => request(axios, basePath));
+        apiFido2AssertionOptionsPost(assertionOptionsRequest: AssertionOptionsRequest, options?: any): AxiosPromise<AssertionOptions> {
+            return localVarFp.apiFido2AssertionOptionsPost(assertionOptionsRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * 
          * @summary Authenticate a user
-         * @param {object} [body] 
+         * @param {AuthenticatorAssertionRawResponse} [authenticatorAssertionRawResponse] 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeAssertionPost(body?: object, options?: any): AxiosPromise<object> {
-            return localVarFp.makeAssertionPost(body, options).then((request) => request(axios, basePath));
+        apiFido2MakeAssertionPost(authenticatorAssertionRawResponse?: AuthenticatorAssertionRawResponse, options?: any): AxiosPromise<AssertionVerificationResult> {
+            return localVarFp.apiFido2MakeAssertionPost(authenticatorAssertionRawResponse, options).then((request) => request(axios, basePath));
         },
         /**
          * 
          * @summary Generate credential options for registration
-         * @param {InlineObject} [inlineObject] 
+         * @param {MakeCredentialOptions} makeCredentialOptions 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeCredentialOptionsPost(inlineObject?: InlineObject, options?: any): AxiosPromise<object> {
-            return localVarFp.makeCredentialOptionsPost(inlineObject, options).then((request) => request(axios, basePath));
+        apiFido2MakeCredentialOptionsPost(makeCredentialOptions: MakeCredentialOptions, options?: any): AxiosPromise<CredentialCreateOptions> {
+            return localVarFp.apiFido2MakeCredentialOptionsPost(makeCredentialOptions, options).then((request) => request(axios, basePath));
         },
         /**
          * 
          * @summary Register a new credential
-         * @param {object} [body] 
+         * @param {AuthenticatorAttestationRawResponse} authenticatorAttestationRawResponse 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        makeCredentialPost(body?: object, options?: any): AxiosPromise<object> {
-            return localVarFp.makeCredentialPost(body, options).then((request) => request(axios, basePath));
+        apiFido2MakeCredentialPost(authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options?: any): AxiosPromise<object> {
+            return localVarFp.apiFido2MakeCredentialPost(authenticatorAttestationRawResponse, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -449,49 +995,49 @@ export class DefaultApi extends BaseAPI {
     /**
      * 
      * @summary Generate assertion options for authentication
-     * @param {InlineObject1} [inlineObject1] 
+     * @param {AssertionOptionsRequest} assertionOptionsRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApi
      */
-    public assertionOptionsPost(inlineObject1?: InlineObject1, options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).assertionOptionsPost(inlineObject1, options).then((request) => request(this.axios, this.basePath));
+    public apiFido2AssertionOptionsPost(assertionOptionsRequest: AssertionOptionsRequest, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).apiFido2AssertionOptionsPost(assertionOptionsRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * 
      * @summary Authenticate a user
-     * @param {object} [body] 
+     * @param {AuthenticatorAssertionRawResponse} [authenticatorAssertionRawResponse] 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApi
      */
-    public makeAssertionPost(body?: object, options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).makeAssertionPost(body, options).then((request) => request(this.axios, this.basePath));
+    public apiFido2MakeAssertionPost(authenticatorAssertionRawResponse?: AuthenticatorAssertionRawResponse, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).apiFido2MakeAssertionPost(authenticatorAssertionRawResponse, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * 
      * @summary Generate credential options for registration
-     * @param {InlineObject} [inlineObject] 
+     * @param {MakeCredentialOptions} makeCredentialOptions 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApi
      */
-    public makeCredentialOptionsPost(inlineObject?: InlineObject, options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).makeCredentialOptionsPost(inlineObject, options).then((request) => request(this.axios, this.basePath));
+    public apiFido2MakeCredentialOptionsPost(makeCredentialOptions: MakeCredentialOptions, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).apiFido2MakeCredentialOptionsPost(makeCredentialOptions, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
      * 
      * @summary Register a new credential
-     * @param {object} [body] 
+     * @param {AuthenticatorAttestationRawResponse} authenticatorAttestationRawResponse 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof DefaultApi
      */
-    public makeCredentialPost(body?: object, options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).makeCredentialPost(body, options).then((request) => request(this.axios, this.basePath));
+    public apiFido2MakeCredentialPost(authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options?: AxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).apiFido2MakeCredentialPost(authenticatorAttestationRawResponse, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
