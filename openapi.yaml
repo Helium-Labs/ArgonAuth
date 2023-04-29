@@ -38,23 +38,11 @@ paths:
     post:
       summary: Generate credential options for registration
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                displayName:
-                  type: string
-                attType:
-                  type: string
-                authType:
-                  type: string
-                residentKey:
-                  type: string
-                userVerification:
-                  type: string
+              $ref: '#/components/schemas/MakeCredentialOptions'
       responses:
         '200':
           description: OK
@@ -66,6 +54,7 @@ paths:
     post:
       summary: Register a new credential
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -81,15 +70,11 @@ paths:
     post:
       summary: Generate assertion options for authentication
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                userVerification:
-                  type: string
+              $ref: '#/components/schemas/AssertionOptionsRequest'
       responses:
         '200':
           description: OK
@@ -114,15 +99,288 @@ paths:
                 $ref: '#/components/schemas/AssertionVerificationResult'
 components:
   schemas:
-    CredentialCreateOptions:
-      type: object
-    AuthenticatorAttestationRawResponse:
-      type: object
     CredentialMakeResult:
       type: object
+# /makeCredentialOptions schemas
+    MakeCredentialOptions:
+        type: object
+        properties:
+            username:
+                type: string
+            displayName:
+                type: string
+            attType:
+                type: string
+            authType:
+                type: string
+            residentKey:
+                type: string
+            userVerification:
+                type: string
+    CredentialCreateOptions:
+      type: object
+      properties:
+        rp:
+          $ref: '#/components/schemas/PublicKeyCredentialRpEntity'
+        user:
+          $ref: '#/components/schemas/Fido2User'
+        challenge:
+          type: string
+          format: byte
+        pubKeyCredParams:
+          type: array
+          items:
+            $ref: '#/components/schemas/PubKeyCredParam'
+        timeout:
+          type: integer
+          format: int64
+        attestation:
+          $ref: '#/components/schemas/AttestationConveyancePreference'
+        authenticatorSelection:
+          $ref: '#/components/schemas/AuthenticatorSelection'
+        excludeCredentials:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKeyCredentialDescriptor'
+        extensions:
+          $ref: '#/components/schemas/AuthenticationExtensionsClientInputs'
+    PublicKeyCredentialRpEntity:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+          nullable: true
+    Fido2User:
+      type: object
+      properties:
+        name:
+          type: string
+        id:
+          type: string
+          format: byte
+        displayName:
+          type: string
+    PubKeyCredParam:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/PublicKeyCredentialType'
+        alg:
+          $ref: '#/components/schemas/COSEAlgorithm'
+    AuthenticatorSelection:
+      type: object
+      properties:
+        authenticatorAttachment:
+          $ref: '#/components/schemas/AuthenticatorAttachment'
+          nullable: true
+        requireResidentKey:
+          type: boolean
+        userVerification:
+          $ref: '#/components/schemas/UserVerificationRequirement'
+    PublicKeyCredentialDescriptor:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/PublicKeyCredentialType'
+        id:
+          type: string
+          format: byte
+        transports:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthenticatorTransport'
+          nullable: true
+    AuthenticatorTransport:
+      type: string
+      enum:
+        - usb
+        - nfc
+        - ble
+        - internal
+    PublicKeyCredentialType:
+      type: string
+      enum:
+        - public-key
+    AuthenticationExtensionsClientInputs:
+      type: object
+      properties:
+        example.extension:
+          type: object
+        appid:
+          type: string
+        authnSel:
+          type: array
+          items:
+            type: string
+            format: byte
+        exts:
+          type: boolean
+        uvm:
+          type: boolean
+      additionalProperties: false
+    AttestationConveyancePreference:
+      type: string
+      enum:
+        - none
+        - indirect
+        - direct
+    COSEAlgorithm:
+      type: integer
+      enum:
+        - -65535
+        - -259
+        - -258
+        - -257
+        - -39
+        - -38
+        - -37
+        - -36
+        - -35
+        - -8
+        - -7
+        - -47
+    AuthenticatorAttachment:
+      type: string
+      enum:
+        - platform
+        - cross-platform
+    UserVerificationRequirement:
+      type: string
+      enum:
+        - required
+        - preferred
+        - discouraged
+# /makeCredential schemas
+    AuthenticatorAttestationRawResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: byte
+        rawId:
+          type: string
+          format: byte
+        type:
+          type: string
+          enum: ["public-key"]
+        response:
+          type: object
+          properties:
+            attestationObject:
+              type: string
+              format: byte
+            clientDataJSON:
+              type: string
+              format: byte
+        extensions:
+          $ref: '#/components/schemas/AuthenticationExtensionsClientOutputs'
+    AuthenticationExtensionsClientOutputs:
+      type: object
+      properties:
+        example.extension:
+          type: object
+        appid:
+          type: boolean
+        authnSel:
+          type: boolean
+        exts:
+          type: array
+          items:
+            type: string
+        uvm:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+              format: int64
+# /assertionOptions schemas
+    AssertionOptionsRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        userVerification:
+          type: string
     AssertionOptions:
       type: object
+      properties:
+        challenge:
+          type: string
+          format: base64url
+        timeout:
+          type: integer
+          format: uint32
+        rpId:
+          type: string
+        allowCredentials:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicKeyCredentialDescriptor'
+        userVerification:
+          $ref: '#/components/schemas/UserVerificationRequirement'
+        extensions:
+          $ref: '#/components/schemas/AuthenticationExtensionsClientInputs'
+      required:
+        - challenge
+        - timeout
+# /makeAssertion
     AuthenticatorAssertionRawResponse:
       type: object
+      properties:
+        id:
+          type: string
+          format: base64url
+        rawId:
+          type: string
+          format: base64url
+        response:
+          $ref: '#/components/schemas/AssertionResponse'
+        type:
+          $ref: '#/components/schemas/PublicKeyCredentialType'
+        extensions:
+          $ref: '#/components/schemas/AuthenticationExtensionsClientOutputs'
+      required:
+        - id
+        - rawId
+        - response
+    AssertionResponse:
+      type: object
+      properties:
+        authenticatorData:
+          type: string
+          format: base64url
+        signature:
+          type: string
+          format: base64url
+        clientDataJSON:
+          type: string
+          format: base64url
+        userHandle:
+          type: string
+          format: base64url
+      required:
+        - authenticatorData
+        - signature
+        - clientDataJSON
     AssertionVerificationResult:
       type: object
+      properties:
+        status:
+          type: string
+        errorMessage:
+          type: string
+        credentialId:
+          type: string
+          format: base64url
+        counter:
+          type: integer
+      required:
+        - status
+        - errorMessage
+        - credentialId
+        - counter
