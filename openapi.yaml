@@ -108,9 +108,9 @@ components:
             displayName:
                 type: string
             attType:
-                type: string
+              $ref: '#/components/schemas/AttestationConveyancePreference'
             authType:
-                type: string
+              $ref: '#/components/schemas/AuthenticatorAttachment'
             requireResidentKey:
                 type: boolean
             userVerification:
