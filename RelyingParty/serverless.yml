@@ -18,6 +18,12 @@ functions:
       - http:
           path: /
           method: ANY
+          cors:
+            origin: '*'
+            headers: '*'
       - http:
           path: /{proxy+}
           method: ANY
+          cors:
+            origin: '*'
+            headers: '*'
