@@ -1,24 +1,23 @@
-service: aspnetcore-webapi
+service: relyingparty
+frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: dotnet6
+  region: us-east-1
 
-plugins:
-  - serverless-aws-local-dotnet
-  - serverless-offline
+package:
+  individually: true
 
 functions:
-  AspNetCoreFunction:
+  api:
     handler: RelyingParty::RelyingParty.LambdaEntryPoint::FunctionHandlerAsync
+    package:
+      artifact: bin/release/net6.0/RelyingParty.zip
     events:
-      - http:
-          path: /{proxy+}
-          method: ANY
       - http:
           path: /
           method: ANY
-
-custom:
-  aws-local-dotnet:
-    src: RelyingParty/src/RelyingParty/bin/Release/net6.0/RelyingParty.dll
+      - http:
+          path: /{proxy+}
+          method: ANY
