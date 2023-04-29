@@ -637,10 +637,10 @@ export interface MakeCredentialOptions {
     'authType'?: string;
     /**
      * 
-     * @type {string}
+     * @type {boolean}
      * @memberof MakeCredentialOptions
      */
-    'residentKey'?: string;
+    'requireResidentKey'?: boolean;
     /**
      * 
      * @type {string}
