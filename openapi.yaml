@@ -18,16 +18,22 @@ paths:
             text/plain:
               schema:
                 type: string
-  /test-get:
-    get:
-      summary: Test GET message
+  /test:
+    post:
+      summary: Test POST message
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+        required: true
       responses:
         '200':
-          description: You have invoked test-get running ASP.NET Core on AWS Lambda
+          description: The JSON object that was sent in the request body
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string    
+                type: object
   /makeCredentialOptions:
     post:
       summary: Generate credential options for registration

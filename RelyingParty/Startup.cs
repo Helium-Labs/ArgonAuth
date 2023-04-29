@@ -15,6 +15,18 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container
     public void ConfigureServices(IServiceCollection services)
     {
+        // Add CORS services and configure the policy
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAllOrigins",
+                builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+        });
+
         services.AddControllers();
 
         string connectionString = Configuration["ConnectionStrings:Default"];
@@ -36,6 +48,9 @@ public class Startup
 
         app.UseHttpsRedirection();
 
+        // Enable CORS with the policy created in ConfigureServices
+        app.UseCors("AllowAllOrigins");
+
         app.UseRouting();
 
         app.UseAuthorization();
@@ -47,9 +62,16 @@ public class Startup
             {
                 await context.Response.WriteAsync("Welcome to running ASP.NET Core on AWS Lambda");
             });
-            endpoints.MapGet("/test-get", async context =>
+            endpoints.MapPost("/test", async context =>
             {
-                await context.Response.WriteAsync("You have invoked test-get running ASP.NET Core on AWS Lambda");
+                using var reader = new StreamReader(context.Request.Body);
+                string requestBody = await reader.ReadToEndAsync();
+
+                // If you want to parse the JSON into an object, you can use:
+                // var jsonObject = JsonConvert.DeserializeObject(requestBody);
+
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync(requestBody);
             });
         });
     }
