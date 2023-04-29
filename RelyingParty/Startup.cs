@@ -1,5 +1,5 @@
 using Fido2NetLib;
-using MySql.Data.MySqlClient;
+
 
 namespace RelyingParty;
 
@@ -46,6 +46,10 @@ public class Startup
             endpoints.MapGet("/", async context =>
             {
                 await context.Response.WriteAsync("Welcome to running ASP.NET Core on AWS Lambda");
+            });
+            endpoints.MapGet("/test-get", async context =>
+            {
+                await context.Response.WriteAsync("You have invoked test-get running ASP.NET Core on AWS Lambda");
             });
         });
     }

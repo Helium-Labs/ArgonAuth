@@ -13,7 +13,7 @@ This project is an implementation of a FIDO2 Relying Party, utilizing the FIDO2 
 
 Generate the client in the language of choice, with the openapi-generator.
 ```sh
-java -jar openapi-generator-cli.jar generate -i openapi.yaml -g typescript-axios -o ./TypescriptAxios 
+java -jar openapi-generator-cli.jar generate -i openapi.yaml -g typescript-axios -o ./KeypartyClient 
 ```
 
 ## Getting Started
