@@ -111,8 +111,8 @@ components:
                 type: string
             authType:
                 type: string
-            residentKey:
-                type: string
+            requireResidentKey:
+                type: boolean
             userVerification:
                 type: string
     CredentialCreateOptions:

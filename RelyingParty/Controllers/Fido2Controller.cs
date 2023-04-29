@@ -40,7 +40,7 @@ public class Fido2Controller : Controller
                                             [FromBody] string displayName,
                                             [FromBody] string attType,
                                             [FromBody] string authType,
-                                            [FromBody] string residentKey,
+                                            [FromBody] bool requireResidentKey,
                                             [FromBody] string userVerification)
     {
         try
@@ -63,17 +63,15 @@ public class Fido2Controller : Controller
             var existingKeys = _db.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
 
             // 3. Create options
-            /*
-            // UserVerificationRequirement cannot be found. Outdated example. It's supposed to select the default authenticator associated with the users device.
             var authenticatorSelection = new AuthenticatorSelection
             {
-                ResidentKey = residentKey.ToEnum<ResidentKeyRequirement>(),
+                AuthenticatorAttachment = authType.ToEnum<AuthenticatorAttachment>(),
+                RequireResidentKey = requireResidentKey,
                 UserVerification = userVerification.ToEnum<UserVerificationRequirement>()
             };
 
             if (!string.IsNullOrEmpty(authType))
                 authenticatorSelection.AuthenticatorAttachment = authType.ToEnum<AuthenticatorAttachment>();
-            */
 
             var exts = new AuthenticationExtensionsClientInputs()
             {
@@ -179,7 +177,6 @@ public class Fido2Controller : Controller
             // 5. Return options to client
             return Json(options);
         }
-
         catch (Exception e)
         {
             return Json(new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) });
