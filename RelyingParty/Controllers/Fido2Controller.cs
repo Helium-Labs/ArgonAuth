@@ -21,11 +21,12 @@ public class Fido2Controller : Controller
 {
     private IFido2 _fido2;
     public static IMetadataService _mds;
-    public static readonly DevelopmentInMemoryStore DemoStorage = new DevelopmentInMemoryStore();
+    public static PlanetScaleDatabase _db;
 
-    public Fido2Controller(IFido2 fido2)
+    public Fido2Controller(IFido2 fido2, PlanetScaleDatabase database)
     {
         _fido2 = fido2;
+        _db = database;
     }
 
     private string FormatException(Exception e)
@@ -51,7 +52,7 @@ public class Fido2Controller : Controller
             }
 
             // 1. Get user from DB by username (in our example, auto create missing users)
-            var user = DemoStorage.GetOrAddUser(username, () => new Fido2User
+            var user = _db.GetOrAddUser(username, () => new Fido2User
             {
                 DisplayName = displayName,
                 Name = username,
@@ -59,7 +60,7 @@ public class Fido2Controller : Controller
             });
 
             // 2. Get user existing keys by username
-            var existingKeys = DemoStorage.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
+            var existingKeys = _db.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
 
             // 3. Create options
             /*
@@ -107,7 +108,7 @@ public class Fido2Controller : Controller
             // 2. Create callback so that lib can verify credential id is unique to this user
             IsCredentialIdUniqueToUserAsyncDelegate callback = static async (args, cancellationToken) =>
             {
-                var users = await DemoStorage.GetUsersByCredentialIdAsync(args.CredentialId, cancellationToken);
+                var users = await _db.GetUsersByCredentialIdAsync(args.CredentialId, cancellationToken);
                 if (users.Count > 0)
                     return false;
 
@@ -118,7 +119,7 @@ public class Fido2Controller : Controller
             var success = await _fido2.MakeNewCredentialAsync(attestationResponse, options, callback, cancellationToken: cancellationToken);
 
             // 3. Store the credentials in db
-            DemoStorage.AddCredentialToUser(options.User, new StoredCredential
+            _db.AddCredentialToUser(options.User, new StoredCredential
             {
                 Descriptor = new PublicKeyCredentialDescriptor(success.Result.CredentialId),
                 PublicKey = success.Result.PublicKey,
@@ -153,10 +154,10 @@ public class Fido2Controller : Controller
             if (!string.IsNullOrEmpty(username))
             {
                 // 1. Get user from DB
-                var user = DemoStorage.GetUser(username) ?? throw new ArgumentException("Username was not registered");
+                var user = _db.GetUser(username) ?? throw new ArgumentException("Username was not registered");
 
                 // 2. Get registered credentials from database
-                existingCredentials = DemoStorage.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
+                existingCredentials = _db.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
             }
 
             var exts = new AuthenticationExtensionsClientInputs()
@@ -196,7 +197,7 @@ public class Fido2Controller : Controller
             var options = AssertionOptions.FromJson(jsonOptions);
 
             // 2. Get registered credential from database
-            var creds = DemoStorage.GetCredentialById(clientResponse.Id) ?? throw new Exception("Unknown credentials");
+            var creds = _db.GetCredentialById(clientResponse.Id) ?? throw new Exception("Unknown credentials");
 
             // 3. Get credential counter from database
             var storedCounter = creds.SignatureCounter;
@@ -204,7 +205,7 @@ public class Fido2Controller : Controller
             // 4. Create callback to check if userhandle owns the credentialId
             IsUserHandleOwnerOfCredentialIdAsync callback = static async (args, cancellationToken) =>
             {
-                var storedCreds = await DemoStorage.GetCredentialsByUserHandleAsync(args.UserHandle, cancellationToken);
+                var storedCreds = await _db.GetCredentialsByUserHandleAsync(args.UserHandle, cancellationToken);
                 return storedCreds.Exists(c => c.Descriptor.Id.SequenceEqual(args.CredentialId));
             };
 
@@ -212,7 +213,7 @@ public class Fido2Controller : Controller
             var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback, cancellationToken: cancellationToken);
 
             // 6. Store the updated counter
-            DemoStorage.UpdateCounter(res.CredentialId, res.Counter);
+            _db.UpdateCounter(res.CredentialId, res.Counter);
 
             // 7. return OK to client
             return Json(res);

@@ -14,5 +14,9 @@
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="8.1.0" />
     <PackageReference Include="Fido2.AspNet" Version="3.0.1" />
+    <PackageReference Include="MySql.Data" Version="8.0.33" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Data\" />
   </ItemGroup>
 </Project>

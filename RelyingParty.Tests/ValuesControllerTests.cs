@@ -5,7 +5,6 @@ using Amazon.Lambda.TestUtilities;
 using Amazon.Lambda.APIGatewayEvents;
 
 
-
 namespace RelyingParty.Tests;
 
 public class ValuesControllerTests
@@ -30,6 +29,5 @@ public class ValuesControllerTests
         Assert.True(response.MultiValueHeaders.ContainsKey("Content-Type"));
         Assert.Equal("application/json; charset=utf-8", response.MultiValueHeaders["Content-Type"][0]);
     }
-
 
 }
