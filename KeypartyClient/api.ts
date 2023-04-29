@@ -32,6 +32,18 @@ export interface AssertionOptions {
      * @type {string}
      * @memberof AssertionOptions
      */
+    'status'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionOptions
+     */
+    'errorMessage'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AssertionOptions
+     */
     'challenge': string;
     /**
      * 
@@ -125,25 +137,25 @@ export interface AssertionVerificationResult {
      * @type {string}
      * @memberof AssertionVerificationResult
      */
-    'status': string;
+    'status'?: string;
     /**
      * 
      * @type {string}
      * @memberof AssertionVerificationResult
      */
-    'errorMessage': string;
+    'errorMessage'?: string;
     /**
      * 
      * @type {string}
      * @memberof AssertionVerificationResult
      */
-    'credentialId': string;
+    'credentialId'?: string;
     /**
      * 
      * @type {number}
      * @memberof AssertionVerificationResult
      */
-    'counter': number;
+    'counter'?: number;
 }
 /**
  * 
@@ -157,6 +169,73 @@ export enum AttestationConveyancePreference {
     Direct = 'direct'
 }
 
+/**
+ * 
+ * @export
+ * @interface AttestationVerificationSuccess
+ */
+export interface AttestationVerificationSuccess {
+    /**
+     * 
+     * @type {string}
+     * @memberof AttestationVerificationSuccess
+     */
+    'publicKey': string;
+    /**
+     * 
+     * @type {Fido2User}
+     * @memberof AttestationVerificationSuccess
+     */
+    'user': Fido2User;
+    /**
+     * 
+     * @type {string}
+     * @memberof AttestationVerificationSuccess
+     */
+    'credType': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AttestationVerificationSuccess
+     */
+    'aaguid': string;
+    /**
+     * 
+     * @type {any}
+     * @memberof AttestationVerificationSuccess
+     */
+    'attestationCertificate'?: any | null;
+    /**
+     * 
+     * @type {Array<any>}
+     * @memberof AttestationVerificationSuccess
+     */
+    'attestationCertificateChain': Array<any>;
+    /**
+     * 
+     * @type {string}
+     * @memberof AttestationVerificationSuccess
+     */
+    'status'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AttestationVerificationSuccess
+     */
+    'errorMessage'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AttestationVerificationSuccess
+     */
+    'credentialId'?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof AttestationVerificationSuccess
+     */
+    'counter'?: number;
+}
 /**
  * 
  * @export
@@ -411,6 +490,18 @@ export enum COSEAlgorithm {
 export interface CredentialCreateOptions {
     /**
      * 
+     * @type {string}
+     * @memberof CredentialCreateOptions
+     */
+    'status'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CredentialCreateOptions
+     */
+    'errorMessage'?: string;
+    /**
+     * 
      * @type {PublicKeyCredentialRpEntity}
      * @memberof CredentialCreateOptions
      */
@@ -463,6 +554,31 @@ export interface CredentialCreateOptions {
      * @memberof CredentialCreateOptions
      */
     'extensions'?: AuthenticationExtensionsClientInputs;
+}
+/**
+ * 
+ * @export
+ * @interface CredentialMakeResult
+ */
+export interface CredentialMakeResult {
+    /**
+     * 
+     * @type {string}
+     * @memberof CredentialMakeResult
+     */
+    'status': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CredentialMakeResult
+     */
+    'errorMessage': string;
+    /**
+     * 
+     * @type {AttestationVerificationSuccess}
+     * @memberof CredentialMakeResult
+     */
+    'result'?: AttestationVerificationSuccess;
 }
 /**
  * 
@@ -888,7 +1004,7 @@ export const DefaultApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async apiFido2MakeCredentialPost(authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<object>> {
+        async apiFido2MakeCredentialPost(authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CredentialMakeResult>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.apiFido2MakeCredentialPost(authenticatorAttestationRawResponse, options);
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
@@ -960,7 +1076,7 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        apiFido2MakeCredentialPost(authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options?: any): AxiosPromise<object> {
+        apiFido2MakeCredentialPost(authenticatorAttestationRawResponse: AuthenticatorAttestationRawResponse, options?: any): AxiosPromise<CredentialMakeResult> {
             return localVarFp.apiFido2MakeCredentialPost(authenticatorAttestationRawResponse, options).then((request) => request(axios, basePath));
         },
         /**
