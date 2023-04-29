@@ -3,9 +3,31 @@ info:
   title: FIDO2 WebAuthn API
   version: 1.0.0
 servers:
+  - url: https://d72am55u53.execute-api.us-east-1.amazonaws.com/dev
+    description: Production/Stagin Endpoint
   - url: http://localhost:5050
     description: Offline development server
 paths:
+  /:
+    get:
+      summary: Welcome message
+      responses:
+        '200':
+          description: Welcome to running ASP.NET Core on AWS Lambda
+          content:
+            text/plain:
+              schema:
+                type: string
+  /test-get:
+    get:
+      summary: Test GET message
+      responses:
+        '200':
+          description: You have invoked test-get running ASP.NET Core on AWS Lambda
+          content:
+            text/plain:
+              schema:
+                type: string    
   /makeCredentialOptions:
     post:
       summary: Generate credential options for registration
