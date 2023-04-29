@@ -99,8 +99,6 @@ paths:
                 $ref: '#/components/schemas/AssertionVerificationResult'
 components:
   schemas:
-    CredentialMakeResult:
-      type: object
 # /makeCredentialOptions schemas
     MakeCredentialOptions:
         type: object
@@ -120,6 +118,10 @@ components:
     CredentialCreateOptions:
       type: object
       properties:
+        status:
+          type: string
+        errorMessage:
+          type: string
         rp:
           $ref: '#/components/schemas/PublicKeyCredentialRpEntity'
         user:
@@ -298,6 +300,48 @@ components:
             items:
               type: integer
               format: int64
+    CredentialMakeResult:
+      type: object
+      properties:
+        status:
+          type: string
+        errorMessage:
+          type: string
+        result:
+          $ref: '#/components/schemas/AttestationVerificationSuccess'
+      required:
+        - status
+        - errorMessage
+    AttestationVerificationSuccess:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/AssertionVerificationResult'
+      properties:
+        publicKey:
+          type: string
+          format: byte
+        user:
+          $ref: '#/components/schemas/Fido2User'
+        credType:
+          type: string
+        aaguid:
+          type: string
+          format: uuid
+        attestationCertificate:
+          type: string
+          format: binary
+          nullable: true
+        attestationCertificateChain:
+          type: array
+          items:
+            type: string
+            format: binary
+      required:
+        - publicKey
+        - user
+        - credType
+        - aaguid
+        - attestationCertificateChain
 # /assertionOptions schemas
     AssertionOptionsRequest:
       type: object
@@ -309,6 +353,10 @@ components:
     AssertionOptions:
       type: object
       properties:
+        status:
+          type: string
+        errorMessage:
+          type: string
         challenge:
           type: string
           format: base64url
@@ -379,8 +427,3 @@ components:
           format: base64url
         counter:
           type: integer
-      required:
-        - status
-        - errorMessage
-        - credentialId
-        - counter
