@@ -1,0 +1,40 @@
+﻿@page "/counter"
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Converters
+@using Newtonsoft.Json.Serialization
+@using SampleClient.Data
+@using Newtonsoft
+@inject RelyingPartyConnection RPService
+@inject IJSRuntime js
+
+<PageTitle>Authentication</PageTitle>
+
+<h1>Authentication</h1>
+
+<p role="status">Current user: @currentUser</p>
+
+<button class="btn btn-primary" @onclick="Register">Register</button>
+
+@code {
+    private string currentUser = "";
+
+    private async Task Register()
+    {
+        string username="TestUser";
+        string displayName = "Mr. Test User";
+        string attestationType = "none";
+        string authenticator_attachment = "";
+        bool user_verification = true;
+        string resident_key = "discouraged";
+        var credentialCreationOptions= await RPService.RelyingParty.MakeCredentialOptionsAsync("TestUser", "Test User", attestationType, authenticator_attachment, user_verification, resident_key);
+
+        var jsonSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                Converters = { new ByteArrayConverterForJS(), new StringEnumConverter() }
+            };
+        var makeCredentialOptionsJson = JsonConvert.SerializeObject(credentialCreationOptions, jsonSettings);
+        await js.InvokeVoidAsync("createCredential", makeCredentialOptionsJson);
+    
+    }
+}

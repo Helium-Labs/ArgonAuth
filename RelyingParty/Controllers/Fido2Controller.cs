@@ -1,17 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
 using Fido2NetLib;
 using Fido2NetLib.Development;
 using Fido2NetLib.Objects;
-
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using RelyingParty.Algorand.ServerAccount;
+using RelyingParty.Models;
+using System.Text;
 using static Fido2NetLib.Fido2;
 
 namespace Fido2Demo;
@@ -20,13 +13,16 @@ namespace Fido2Demo;
 public class Fido2Controller : Controller
 {
     private IFido2 _fido2;
+    private IMasterAccount _serverAccount;
     public static IMetadataService _mds;
     public static PlanetScaleDatabase _db;
 
-    public Fido2Controller(IFido2 fido2, PlanetScaleDatabase database)
+    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, PlanetScaleDatabase database)
     {
         _fido2 = fido2;
+        _serverAccount = serverAccount;
         _db = database;
+
     }
 
     private string FormatException(Exception e)
@@ -36,27 +32,22 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeCredentialOptions")]
-    public JsonResult MakeCredentialOptions([FromBody] string username,
-                                            [FromBody] string displayName,
-                                            [FromBody] string attType,
-                                            [FromBody] string authType,
-                                            [FromBody] bool requireResidentKey,
-                                            [FromBody] string userVerification)
+    public CredentialCreateOptions MakeCredentialOptions(MakeCredentialOptionsModel model)
     {
         try
         {
 
-            if (string.IsNullOrEmpty(username))
+            if (string.IsNullOrEmpty(model.Username))
             {
-                username = $"{displayName} (Usernameless user created at {DateTime.UtcNow})";
+                model.Username = $"{model.DisplayName} (Usernameless user created at {DateTime.UtcNow})";
             }
 
             // 1. Get user from DB by username (in our example, auto create missing users)
-            var user = _db.GetOrAddUser(username, () => new Fido2User
+            var user = _db.GetOrAddUser(model.Username, () => new Fido2User
             {
-                DisplayName = displayName,
-                Name = username,
-                Id = Encoding.UTF8.GetBytes(username) // byte representation of userID is required
+                DisplayName = model.DisplayName,
+                Name = model.Username,
+                Id = Encoding.UTF8.GetBytes(model.Username) // byte representation of userID is required
             });
 
             // 2. Get user existing keys by username
@@ -65,13 +56,12 @@ public class Fido2Controller : Controller
             // 3. Create options
             var authenticatorSelection = new AuthenticatorSelection
             {
-                AuthenticatorAttachment = authType.ToEnum<AuthenticatorAttachment>(),
-                RequireResidentKey = requireResidentKey,
-                UserVerification = userVerification.ToEnum<UserVerificationRequirement>()
+                RequireResidentKey = model.ResidentKey,
+                UserVerification = model.UserVerification.ToEnum<UserVerificationRequirement>()
             };
 
-            if (!string.IsNullOrEmpty(authType))
-                authenticatorSelection.AuthenticatorAttachment = authType.ToEnum<AuthenticatorAttachment>();
+            if (!string.IsNullOrEmpty(model.AuthType))
+                authenticatorSelection.AuthenticatorAttachment = model.AuthType.ToEnum<AuthenticatorAttachment>();
 
             var exts = new AuthenticationExtensionsClientInputs()
             {
@@ -79,23 +69,23 @@ public class Fido2Controller : Controller
                 UserVerificationMethod = true,
             };
 
-            var options = _fido2.RequestNewCredential(user, existingKeys, AuthenticatorSelection.Default, attType.ToEnum<AttestationConveyancePreference>(), exts);
+            var options = _fido2.RequestNewCredential(user, existingKeys, AuthenticatorSelection.Default, model.AttType.ToEnum<AttestationConveyancePreference>(), exts);
 
             // 4. Temporarily store options, session/in-memory cache/redis/db
             HttpContext.Session.SetString("fido2.attestationOptions", options.ToJson());
 
             // 5. return options to client
-            return Json(options);
+            return options;
         }
         catch (Exception e)
         {
-            return Json(new CredentialCreateOptions { Status = "error", ErrorMessage = FormatException(e) });
+            return new CredentialCreateOptions { Status = "error", ErrorMessage = FormatException(e) };
         }
     }
 
     [HttpPost]
     [Route("/makeCredential")]
-    public async Task<JsonResult> MakeCredential([FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
+    public async Task<CredentialMakeResult> MakeCredential([FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
     {
         try
         {
@@ -132,27 +122,27 @@ public class Fido2Controller : Controller
             success.Result.AttestationCertificate = null;
             success.Result.AttestationCertificateChain = null;
 
-            // 4. return "ok" to the client
-            return Json(success);
+
+            return success;
         }
         catch (Exception e)
         {
-            return Json(new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null));
+            return new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null);
         }
     }
 
     [HttpPost]
     [Route("/assertionOptions")]
-    public ActionResult AssertionOptionsPost([FromBody] string username, [FromBody] string userVerification)
+    public AssertionOptions AssertionOptionsPost([FromBody] AssertionOptionsPostModel assertionOptions)
     {
         try
         {
             var existingCredentials = new List<PublicKeyCredentialDescriptor>();
 
-            if (!string.IsNullOrEmpty(username))
+            if (!string.IsNullOrEmpty(assertionOptions.Username))
             {
                 // 1. Get user from DB
-                var user = _db.GetUser(username) ?? throw new ArgumentException("Username was not registered");
+                var user = _db.GetUser(assertionOptions.Username) ?? throw new ArgumentException("Username was not registered");
 
                 // 2. Get registered credentials from database
                 existingCredentials = _db.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
@@ -164,7 +154,7 @@ public class Fido2Controller : Controller
             };
 
             // 3. Create options
-            var uv = string.IsNullOrEmpty(userVerification) ? UserVerificationRequirement.Discouraged : userVerification.ToEnum<UserVerificationRequirement>();
+            var uv = string.IsNullOrEmpty(assertionOptions.UserVerification) ? UserVerificationRequirement.Discouraged : assertionOptions.UserVerification.ToEnum<UserVerificationRequirement>();
             var options = _fido2.GetAssertionOptions(
                 existingCredentials,
                 uv,
@@ -175,17 +165,17 @@ public class Fido2Controller : Controller
             HttpContext.Session.SetString("fido2.assertionOptions", options.ToJson());
 
             // 5. Return options to client
-            return Json(options);
+            return options;
         }
         catch (Exception e)
         {
-            return Json(new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) });
+            return new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) };
         }
     }
 
     [HttpPost]
     [Route("/makeAssertion")]
-    public async Task<JsonResult> MakeAssertion([FromBody] AuthenticatorAssertionRawResponse clientResponse, CancellationToken cancellationToken)
+    public async Task<AssertionVerificationResult> MakeAssertion([FromBody] AuthenticatorAssertionRawResponse clientResponse, CancellationToken cancellationToken)
     {
         try
         {
@@ -213,11 +203,11 @@ public class Fido2Controller : Controller
             _db.UpdateCounter(res.CredentialId, res.Counter);
 
             // 7. return OK to client
-            return Json(res);
+            return res;
         }
         catch (Exception e)
         {
-            return Json(new AssertionVerificationResult { Status = "error", ErrorMessage = FormatException(e) });
+            return new AssertionVerificationResult { Status = "error", ErrorMessage = FormatException(e) };
         }
     }
 }
