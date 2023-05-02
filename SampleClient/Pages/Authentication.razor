@@ -20,18 +20,18 @@
 
     private async Task Register()
     {
-        string username="TestUser";
+        string username="TestUser2";
         string displayName = "Mr. Test User";
         string attestationType = "none";
         string authenticator_attachment = "";
-        bool user_verification = true;
-        string resident_key = "discouraged";
-        var credentialCreationOptions= await RPService.RelyingParty.MakeCredentialOptionsAsync("TestUser", "Test User", attestationType, authenticator_attachment, user_verification, resident_key);
+        bool resident_key = false;
+        string user_verification = "preferred";
+        var credentialCreationOptions= await RPService.RelyingParty.MakeCredentialOptionsAsync(username, displayName, attestationType, authenticator_attachment, resident_key, user_verification);
 
         var jsonSettings = new JsonSerializerSettings
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                Converters = { new ByteArrayConverterForJS(), new StringEnumConverter() }
+                Converters = { new ByteArrayConverterForJS() }
             };
         var makeCredentialOptionsJson = JsonConvert.SerializeObject(credentialCreationOptions, jsonSettings);
         await js.InvokeVoidAsync("createCredential", makeCredentialOptionsJson);
