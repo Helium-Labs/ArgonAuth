@@ -6,7 +6,9 @@ using RelyingParty.Algorand.ServerAccount;
 using RelyingParty.AlgorandFidoExtensions;
 using RelyingParty.Models;
 using System.Text;
+using System.Linq;
 using static Fido2NetLib.Fido2;
+using System.Configuration;
 
 namespace Fido2Demo;
 
@@ -71,7 +73,7 @@ public class Fido2Controller : Controller
             };
 
             var options = _fido2.RequestNewCredential(user, existingKeys, AuthenticatorSelection.Default, model.AttType.ToEnum<AttestationConveyancePreference>(), exts);
-
+            options.PubKeyCredParams = options.PubKeyCredParams.Where(o => o.Alg == COSE.Algorithm.ES256).ToList();
             // 4. Temporarily store options, session/in-memory cache/redis/db
             HttpContext.Session.SetString("fido2.attestationOptions", options.ToJson());
 
@@ -141,7 +143,7 @@ public class Fido2Controller : Controller
             {
                 FidoCredentialMakeResult = new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
                 LogicSignatureProgram = null
-            }
+            };
         }
     }
 

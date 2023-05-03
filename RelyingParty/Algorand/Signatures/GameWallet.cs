@@ -14,7 +14,7 @@ namespace RelyingParty.Algorand.Signatures
         }
 
         [SmartSignatureMethod("Ax1")]
-        public bool ApproveTransferClient(AssetTransferTransactionReference txn, byte[] signatureR, byte[] signatureS, byte[] startround, byte[] endround)
+        public int ApproveTransferClient(AssetTransferTransactionReference txn, byte[] signatureR, byte[] signatureS, byte[] startround, byte[] endround)
         {
             //do not allow anything else than a single asset transfer
             if (GroupSize != 1) return 0;
@@ -43,11 +43,13 @@ namespace RelyingParty.Algorand.Signatures
             bool check=Ecdsa_verify_secp256r1(message, signatureR, signatureS, pubkeyX, pubkeyY);
 
 
-            return check;
+
+            if (check==true) return 1;
+            else return 0;
         }
 
         [SmartSignatureMethod("Ax1Delegated")]
-        public bool ApproveTransferDelegated(AssetTransferTransactionReference txn, byte[] signatureR, byte[] signatureS, byte[] proofKey,  ulong startround, ulong endround)
+        public int ApproveTransferDelegated(AssetTransferTransactionReference txn, byte[] signatureR, byte[] signatureS, byte[] proofKey,  ulong startround, ulong endround)
         {
             //do not allow anything else than a single asset transfer
             if (GroupSize != 1) return 0;
