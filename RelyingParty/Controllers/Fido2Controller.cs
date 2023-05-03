@@ -114,7 +114,7 @@ public class Fido2Controller : Controller
                 UserHandle = success.Result.User.Id,
                 SignatureCounter = success.Result.Counter,
                 CredType = success.Result.CredType,
-                RegDate = DateTime.Now,
+                RegDate = DateTime.UtcNow,
                 AaGuid = success.Result.Aaguid
             });
 
@@ -133,7 +133,7 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/assertionOptions")]
-    public AssertionOptions AssertionOptionsPost([FromBody] AssertionOptionsPostModel assertionOptions)
+    public AssertionOptions AssertionOptionsPost( AssertionOptionsPostModel assertionOptions)
     {
         try
         {
@@ -175,7 +175,7 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeAssertion")]
-    public async Task<AssertionVerificationResult> MakeAssertion([FromBody] AuthenticatorAssertionRawResponse clientResponse, CancellationToken cancellationToken)
+    public async Task<AssertionVerificationResult> MakeAssertion( AuthenticatorAssertionRawResponse clientResponse, CancellationToken cancellationToken)
     {
         try
         {
