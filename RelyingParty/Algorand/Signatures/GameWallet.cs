@@ -14,7 +14,7 @@ namespace RelyingParty.Algorand.Signatures
         }
 
         [SmartSignatureMethod("Ax1")]
-        public int ApproveTransferClient(AssetTransferTransactionReference txn, byte[] signature, ulong startround, ulong endround)
+        public bool ApproveTransferClient(AssetTransferTransactionReference txn, byte[] signatureR, byte[] signatureS, byte[] startround, byte[] endround)
         {
             //do not allow anything else than a single asset transfer
             if (GroupSize != 1) return 0;
@@ -30,15 +30,24 @@ namespace RelyingParty.Algorand.Signatures
             if (txn.TxType != txTypeCheck.ToByteArray()) return 0;
 
             //reject if Lease is not set
+            //TODO
 
             //Check that the concatenation of groupid, startround as bytes, endround as bytes, is signed by the address
+            byte[] groupId = GroupId;
+            byte[] message = groupId.Concat(startround);
+            message = groupId.Concat(endround);
+
+            byte[] pubkeyX = { 0xde, 0xad, 0xbe, 0xef }; // to be string replaced by the controller
+            byte[] pubkeyY = { 0xde, 0xad, 0xca, 0xfe }; // to be string replaced by the controller
+
+            bool check=Ecdsa_verify_secp256r1(message, signatureR, signatureS, pubkeyX, pubkeyY);
 
 
-            return 1;
+            return check;
         }
 
         [SmartSignatureMethod("Ax1Delegated")]
-        public int ApproveTransferDelegated(AssetTransferTransactionReference txn, byte[] signature, byte[] proofKey,  ulong startround, ulong endround)
+        public bool ApproveTransferDelegated(AssetTransferTransactionReference txn, byte[] signatureR, byte[] signatureS, byte[] proofKey,  ulong startround, ulong endround)
         {
             //do not allow anything else than a single asset transfer
             if (GroupSize != 1) return 0;
@@ -67,7 +76,7 @@ namespace RelyingParty.Algorand.Signatures
         [SmartSignatureMethod("Payment")]
         public int ApprovePayment(PaymentTransactionReference txn)
         {
-            //TODO
+            //TODO - Only allow the master account to do a transfer
             
             return 0;
         }
