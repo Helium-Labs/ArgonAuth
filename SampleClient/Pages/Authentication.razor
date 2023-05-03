@@ -1,4 +1,5 @@
 ﻿@page "/counter"
+@using GameServer
 @using Newtonsoft.Json
 @using Newtonsoft.Json.Converters
 @using Newtonsoft.Json.Serialization
@@ -20,21 +21,32 @@
 
     private async Task Register()
     {
+        //DEMO CODE. This would be ordinarily be taken from the UI,
+        //and in theory the username is not even necessary.
         string username="TestUser2";
         string displayName = "Mr. Test User";
         string attestationType = "none";
         string authenticator_attachment = "";
         bool resident_key = false;
         string user_verification = "preferred";
+
+        //Call the swagger code-gen'd proxy to get the supported options for creating a credential
         var credentialCreationOptions= await RPService.RelyingParty.MakeCredentialOptionsAsync(username, displayName, attestationType, authenticator_attachment, resident_key, user_verification);
 
+        //Convert to json in a navigator.credentials friendly way
         var jsonSettings = new JsonSerializerSettings
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                Converters = { new ByteArrayConverterForJS() }
+                Converters = { new ByteArrayConverterForJS(), new FidoLibEnumConverter() }
             };
         var makeCredentialOptionsJson = JsonConvert.SerializeObject(credentialCreationOptions, jsonSettings);
-        await js.InvokeVoidAsync("createCredential", makeCredentialOptionsJson);
-    
+
+        //Ask the browser for a new credential
+        string result= await js.InvokeAsync<string>("createCredential", makeCredentialOptionsJson);
+
+        AuthenticatorAttestationRawResponse credentials = JsonConvert.DeserializeObject<AuthenticatorAttestationRawResponse>(result);
+      
+        var credentialResult = await RPService.RelyingParty.MakeCredentialAsync(credentials);
+
     }
 }

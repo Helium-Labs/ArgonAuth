@@ -15,6 +15,7 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container
     public void ConfigureServices(IServiceCollection services)
     {
+        
         // Add CORS services and configure the policy
         services.AddCors(options =>
         {
@@ -45,7 +46,8 @@ public class Startup
                 {
                     options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
                     options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
-                });
+                })
+                ;
 
         string connectionString = Configuration["ConnectionStrings:Default"];
         services.AddSingleton(new PlanetScaleDatabase(connectionString));
@@ -84,7 +86,7 @@ public class Startup
         app.UseSession();
         app.UseStaticFiles();
         app.UseHttpsRedirection();
-
+        
         // Enable CORS with the policy created in ConfigureServices
         app.UseCors("AllowAllOrigins");
 
