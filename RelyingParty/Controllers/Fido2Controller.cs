@@ -3,6 +3,7 @@ using Fido2NetLib.Development;
 using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Mvc;
 using RelyingParty.Algorand.ServerAccount;
+using RelyingParty.AlgorandFidoExtensions;
 using RelyingParty.Models;
 using System.Text;
 using static Fido2NetLib.Fido2;
@@ -85,7 +86,7 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeCredential")]
-    public async Task<CredentialMakeResult> MakeCredential([FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
+    public async Task<MakeCredentialResponse> MakeCredential([FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
     {
         try
         {
@@ -123,11 +124,24 @@ public class Fido2Controller : Controller
             success.Result.AttestationCertificateChain = null;
 
 
-            return success;
+            //Modify our logic signature
+
+
+            MakeCredentialResponse response = new MakeCredentialResponse()
+            {
+                FidoCredentialMakeResult = success,
+                 
+            };
+
+            return response;
         }
         catch (Exception e)
         {
-            return new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null);
+            return new MakeCredentialResponse()
+            {
+                FidoCredentialMakeResult = new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
+                LogicSignatureProgram = null
+            }
         }
     }
 

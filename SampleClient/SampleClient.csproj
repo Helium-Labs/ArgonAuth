@@ -7,12 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <OpenApiReference Include="..\..\..\..\..\..\Algo\swagger.json" CodeGenerator="NSwagCSharp" Namespace="GameServer" ClassName="RelyingParty" Link="OpenAPIs\swagger.json"/>
+	  <OpenApiReference Include="..\..\..\..\..\..\Algo\swagger.json" CodeGenerator="NSwagCSharp" Namespace="GameServer" ClassName="RelyingParty" Link="OpenAPIs\swagger.json" />
 		  
 
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Algorand2" Version="2.0.0.2023041509" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="3.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
