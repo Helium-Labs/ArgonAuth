@@ -72,7 +72,7 @@ public class Fido2Controller : Controller
                 UserVerificationMethod = true,
             };
 
-            var options = _fido2.RequestNewCredential(user, existingKeys, AuthenticatorSelection.Default, model.AttType.ToEnum<AttestationConveyancePreference>(), exts);
+            var options = _fido2.RequestNewCredential(user, existingKeys, authenticatorSelection, model.AttType.ToEnum<AttestationConveyancePreference>(), exts);
             options.PubKeyCredParams = options.PubKeyCredParams.Where(o => o.Alg == COSE.Algorithm.ES256).ToList();
             // 4. Temporarily store options, session/in-memory cache/redis/db
             HttpContext.Session.SetString("fido2.attestationOptions", options.ToJson());
