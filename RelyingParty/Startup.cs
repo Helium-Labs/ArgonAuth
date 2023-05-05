@@ -1,3 +1,6 @@
+using Algorand.Algod;
+
+using Algorand;
 using Fido2NetLib.Objects;
 using NSwag.AspNetCore;
 using RelyingParty.Algorand.ServerAccount;
@@ -9,6 +12,8 @@ namespace RelyingParty;
 
 public class Startup
 {
+
+
     public Startup(IConfiguration configuration)
     {
         Configuration = configuration;
@@ -55,6 +60,11 @@ public class Startup
 
         string connectionString = Configuration["ConnectionStrings:Default"];
         services.AddSingleton(new PlanetScaleDatabase(connectionString));
+
+        //Algod
+        services.AddSingleton<IDefaultApi>(SetUpAlgodConnection());
+        
+        
         // Transient alternative
         // services.AddTransient<MySqlConnection>(_ => new MySqlConnection());
 
@@ -81,7 +91,23 @@ public class Startup
             configure.GenerateEnumMappingDescription = false;
         });
 
+        
+
+
     }
+
+
+
+
+    private  DefaultApi SetUpAlgodConnection()
+    {
+        //A standard sandbox connection
+        var httpClient = HttpClientConfigurator.ConfigureHttpClient(@"http://localhost:4001", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        var algodApiInstance = new DefaultApi(httpClient);
+
+        return algodApiInstance;
+    }
+
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
