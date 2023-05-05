@@ -37,7 +37,7 @@
         var jsonSettings = new JsonSerializerSettings
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                Converters = { new ByteArrayConverterForJS(), new FidoLibEnumConverter() }
+                Converters = { new ByteArrayConverterForJS(), new StringEnumConverter() }
             };
         var makeCredentialOptionsJson = JsonConvert.SerializeObject(credentialCreationOptions, jsonSettings);
 
@@ -45,7 +45,7 @@
         string result= await js.InvokeAsync<string>("createCredential", makeCredentialOptionsJson);
 
         AuthenticatorAttestationRawResponse credentials = JsonConvert.DeserializeObject<AuthenticatorAttestationRawResponse>(result);
-      
+ 
         var credentialResult = await RPService.RelyingParty.MakeCredentialAsync(credentials);
 
     }

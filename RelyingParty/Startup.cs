@@ -1,5 +1,9 @@
-using Fido2NetLib;
+using Fido2NetLib.Objects;
+using NSwag.AspNetCore;
 using RelyingParty.Algorand.ServerAccount;
+using RelyingParty.OpenAPI;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RelyingParty;
 
@@ -15,7 +19,7 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container
     public void ConfigureServices(IServiceCollection services)
     {
-        
+
         // Add CORS services and configure the policy
         services.AddCors(options =>
         {
@@ -44,7 +48,7 @@ public class Startup
         services.AddControllers()
                 .AddJsonOptions(options =>
                 {
-                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
                 })
                 ;
@@ -72,7 +76,10 @@ public class Startup
 
         services.AddScoped<IMasterAccount, MasterAccount>();
 
-        services.AddSwaggerGen();
+        services.AddOpenApiDocument(configure =>
+        {
+            configure.GenerateEnumMappingDescription = false;
+        });
 
     }
 
@@ -86,7 +93,7 @@ public class Startup
         app.UseSession();
         app.UseStaticFiles();
         app.UseHttpsRedirection();
-        
+
         // Enable CORS with the policy created in ConfigureServices
         app.UseCors("AllowAllOrigins");
 
@@ -114,7 +121,8 @@ public class Startup
             });
         });
 
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseOpenApi();
+        app.UseSwaggerUi3();
+
     }
 }

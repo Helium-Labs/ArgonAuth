@@ -110,25 +110,25 @@ public class Fido2Controller : Controller
             var success = await _fido2.MakeNewCredentialAsync(attestationResponse, options, callback, cancellationToken: cancellationToken);
 
             // 3. Store the credentials in db
-            _db.AddCredentialToUser(options.User, new StoredCredential
-            {
-                Descriptor = new PublicKeyCredentialDescriptor(success.Result.CredentialId),
-                PublicKey = success.Result.PublicKey,
-                UserHandle = success.Result.User.Id,
-                SignatureCounter = success.Result.Counter,
-                CredType = success.Result.CredType,
-                RegDate = DateTime.UtcNow,
-                AaGuid = success.Result.Aaguid
-            });
+
+            //TODO:
+
+            //_db.AddCredentialToUser(options.User, new StoredCredential
+            //{
+            //    Descriptor = new PublicKeyCredentialDescriptor(success.Result.CredentialId),
+            //    PublicKey = success.Result.PublicKey,
+            //    UserHandle = success.Result.User.Id,
+            //    SignatureCounter = success.Result.Counter,
+            //    CredType = success.Result.CredType,
+            //    RegDate = DateTime.UtcNow,
+            //    AaGuid = success.Result.Aaguid
+            //});
 
             // Remove Certificates from success because System.Text.Json cannot serialize them properly. See https://github.com/passwordless-lib/fido2-net-lib/issues/328
             success.Result.AttestationCertificate = null;
             success.Result.AttestationCertificateChain = null;
 
-
             //Modify our logic signature
-
-
             MakeCredentialResponse response = new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult = success,
