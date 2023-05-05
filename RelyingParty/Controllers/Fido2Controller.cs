@@ -6,9 +6,12 @@ using RelyingParty.Algorand.ServerAccount;
 using RelyingParty.AlgorandFidoExtensions;
 using RelyingParty.Models;
 using System.Text;
-using System.Linq;
+using AlgoStudio.Clients;
 using static Fido2NetLib.Fido2;
 using System.Configuration;
+using Fido2NetLib.Cbor;
+using Algorand.Algod;
+using RelyingParty.Algorand.Signatures;
 
 namespace Fido2Demo;
 
@@ -17,11 +20,14 @@ public class Fido2Controller : Controller
 {
     private IFido2 _fido2;
     private IMasterAccount _serverAccount;
+    private IDefaultApi _algodApi;
     public static IMetadataService _mds;
     public static PlanetScaleDatabase _db;
 
-    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, PlanetScaleDatabase database)
+
+    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, IDefaultApi algod, PlanetScaleDatabase database)
     {
+        _algodApi = algod;
         _fido2 = fido2;
         _serverAccount = serverAccount;
         _db = database;
@@ -128,11 +134,23 @@ public class Fido2Controller : Controller
             success.Result.AttestationCertificate = null;
             success.Result.AttestationCertificateChain = null;
 
+
+            //get pubkey
+            var decodedPubKey=(CborMap)CborObject.Decode(success.Result.PublicKey);
+            byte[] pubkeyX = (byte[])decodedPubKey.GetValue(-2);
+            byte[] pubkeyY = (byte[])decodedPubKey.GetValue(-3);
+
             //Modify our logic signature
+            var lsig = new AccountGameWallet(pubkeyX, pubkeyY);
+
+            //Compile it
+            //TODO - compile should accept IDefaultApi and IDefaultApi should have a meaningful name that doesnt rely on its namespace
+            var lsigCompiled = await lsig.Compile((DefaultApi)_algodApi);
+
             MakeCredentialResponse response = new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult = success,
-                 
+                LogicSignatureProgram = lsigCompiled.Logic
             };
 
             return response;
