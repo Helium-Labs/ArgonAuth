@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <OpenApiReference Include="..\..\..\..\..\..\Algo\swagger.json" CodeGenerator="NSwagCSharp" Namespace="GameServer" ClassName="RelyingParty" Link="OpenAPIs\swagger.json" >
+	  <OpenApiReference Include="..\..\..\..\..\..\Algo\swagger.json" CodeGenerator="NSwagCSharp" Namespace="GameServer" ClassName="RelyingParty" Link="OpenAPIs\swagger.json">
 		  <Options>/EnumNameGenerator:CamelCaseEnumNameGenerator</Options>
 	  </OpenApiReference>
   </ItemGroup>

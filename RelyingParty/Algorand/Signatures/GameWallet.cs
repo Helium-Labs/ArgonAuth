@@ -27,8 +27,6 @@ namespace RelyingParty.Algorand.Signatures
             //do not permit any kind of rekey
             if (txn.RekeyTo != ZeroAddress) return 0;
 
-           
-
             //make sure only asset transfers are permitted (because the tooling does not yet automatically verify marshalled txns, not sure if it should)
             string txTypeCheck = "pay";
             if (txn.TxType != txTypeCheck.ToByteArray()) return 0;

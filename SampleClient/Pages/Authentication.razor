@@ -1,12 +1,21 @@
 ﻿@page "/counter"
+@using Algorand
+@using Algorand.KMD
+@using Algorand.Algod
+@using Algorand.Algod.Model
+@using Algorand.Algod.Model.Transactions
 @using GameServer
 @using Newtonsoft.Json
 @using Newtonsoft.Json.Converters
 @using Newtonsoft.Json.Serialization
 @using SampleClient.Data
 @using Newtonsoft
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject RelyingPartyConnection RPService
 @inject IJSRuntime js
+@inject IDefaultApi algorand
+@inject Algorand.KMD.Api kmdApi
+@inject ProtectedLocalStorage ProtectedLocalStore
 
 <PageTitle>Authentication</PageTitle>
 
@@ -16,9 +25,17 @@
 
 <button class="btn btn-primary" @onclick="Register">Register</button>
 
+<button class="btn btn-primary" @onclick="Local">Execute autonomous transaction (local transaction)</button>
+
+<button class="btn btn-primary" @onclick="Server">Delegate access to server for transactions (server transactions)</button>
+
+<button class="btn btn-primary" @onclick="SinglePayment">A test function to demonstrate a transaction executed by the server. Payments would not normally be supported.</button>
+
 @code {
     private string currentUser = "";
+  
 
+    //DEMONSTRATE REGISTRATION AT THE SERVER, WHICH ALSO RETURNS AN LSIG FOR AUTONOMOUS TRADING
     private async Task Register()
     {
         //DEMO CODE. This would be ordinarily be taken from the UI,
@@ -45,8 +62,54 @@
         string result= await js.InvokeAsync<string>("createCredential", makeCredentialOptionsJson);
 
         AuthenticatorAttestationRawResponse credentials = JsonConvert.DeserializeObject<AuthenticatorAttestationRawResponse>(result);
- 
-        var credentialResult = await RPService.RelyingParty.MakeCredentialAsync(credentials);
+
+        MakeCredentialResponse? credentialResult = await RPService.RelyingParty.MakeCredentialAsync(credentials);
+        if (credentialResult!=null)
+        {
+            //NOTE Stash the lsig in something like secure storage
+            await ProtectedLocalStore.SetAsync("gamewallet", credentialResult.LogicSignatureProgram);
+        }
 
     }
+
+
+    //DEMONSTRATE AN AUTONOMOUS TRANSACTION WHERE THE CLIENT HAS THEIR OWN ALGOD NODE OR ACCESS AND USES THEIR LSIG
+    //TO EXECUTE A TRANSACTION
+    private async Task Local(){
+        //1. Load our "GameWallet" (a lsig)
+        var gameWallet = await ProtectedLocalStore.GetAsync<byte[]>("gamewallet");
+        LogicsigSignature lsig = new LogicsigSignature(gameWallet.Value);
+
+
+        //NOT IMPLEMENTED
+        
+
+        
+    }
+
+
+    
+    
+    //DEMONSTRATE ESTABLISHING DELEGATED ACCESS TO THE SERVER
+    private async Task Server()
+    {
+        //TODO
+        // 1.Call a flavour of the "sign in" method that returns a *hash of a randomly generated server secret* as the challenge
+        // 2.Concatenate the desired start and end rounds with the hash.
+        // 3.Have navigator.credentials use that as the sign in challenge
+        // 4.Return that to the server in a call with the round validity. 
+        // 5.The server can use the *unhashed* secret + round validity as inputs to one of the lsig methods to sign transactions.
+    }
+
+    //DEMONSTRATE A SINGLE TRANSACTION EXECUTED VIA THE SERVER
+    private async Task SinglePayment(){
+        
+        // This is little more than a test function to show that the 
+        // sign in procedure and lsig evaluation works. However, 
+        // single asset transfers effected by the server may be 
+        // desirable.
+    }
+
+    
 }
+
