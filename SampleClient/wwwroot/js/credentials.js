@@ -62,6 +62,10 @@ async function signIn(assertionOptionsJson) {
     debugger;
 
     assertionOptions = JSON.parse(assertionOptionsJson);
+    assertionOptions.allowCredentials.forEach(function (listItem) {
+        var fixedId = new Uint8Array(listItem.id);
+        listItem.id = fixedId;
+    });
     assertionOptions.challenge = new Uint8Array(assertionOptions.challenge);
 
     let credential;

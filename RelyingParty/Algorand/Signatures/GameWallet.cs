@@ -70,13 +70,25 @@ namespace RelyingParty.Algorand.Signatures
 
             //TODO - reject if Lease is not set
 
-            //TODO - Hash the proofKey and check that the signature of concat(hash+startround+endround) is signed by the address.
-            
-            
+
+            byte[] pubkeyX = { 0xde, 0xad, 0xbe, 0xef }; // to be string replaced by the controller
+            byte[] pubkeyY = { 0xde, 0xad, 0xca, 0xfe }; // to be string replaced by the controller
+
+           
+            byte[] proofKeyHash = Sha512_256(proofKey);
+            byte[] startRoundBytes = startround.ToTealBytes();
+            byte[] message = proofKeyHash.Concat(startRoundBytes);
+            message = message.Concat(endround.ToTealBytes());
+
+            bool result=Ecdsa_verify_secp256r1(message, signatureR, signatureS, pubkeyX, pubkeyY);
+
+            if (result==true) return 1;
+            else
+            {
+                return 0;
+            }
 
 
-
-            return 1;
         }
 
         [SmartSignatureMethod("Payment")]
