@@ -1,6 +1,10 @@
+using Algorand.Algod;
+using Algorand;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using SampleClient.Data;
+
+
 
 namespace SampleClient
 {
@@ -14,6 +18,9 @@ namespace SampleClient
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
             builder.Services.AddSingleton<RelyingPartyConnection>();
+
+
+
 
             var app = builder.Build();
 
@@ -33,8 +40,12 @@ namespace SampleClient
 
             app.MapBlazorHub();
             app.MapFallbackToPage("/_Host");
-
+       
             app.Run();
         }
+
+      
     }
+
+
 }
