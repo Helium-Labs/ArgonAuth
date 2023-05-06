@@ -15,7 +15,7 @@
     <Compile Remove="OpenAPI\EnumModifiers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AlgoStudio" Version="1.1.20" />
+    <PackageReference Include="AlgoStudio" Version="1.1.21" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="8.1.0" />
     <PackageReference Include="Fido2.AspNet" Version="3.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />

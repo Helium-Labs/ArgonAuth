@@ -43,6 +43,8 @@ public class Fido2Controller : Controller
         _serverAccount = serverAccount;
         _db = database;
         _kmdApi = (Api)kmdApi;
+
+       
     }
 
     private string FormatException(Exception e)
@@ -157,6 +159,9 @@ public class Fido2Controller : Controller
             //Compile it
             //TODO - compile should accept IDefaultApi and IDefaultApi should have a meaningful name that doesnt rely on its namespace
             var lsigCompiled = await lsig.Compile((DefaultApi)_algodApi);
+
+            // DEMO CODE
+            await SetUpAccounts();
 
             await preFundLsig(lsigCompiled);
 
