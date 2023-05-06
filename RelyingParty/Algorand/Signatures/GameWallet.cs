@@ -14,41 +14,7 @@ namespace RelyingParty.Algorand.Signatures
         }
 
 
-        //ADD A TEST METHOD TO CHECK AUTH'NG A SIMPLE PAYMENT (I.E. CLIENT FUND, CLIENT PAY)
-        [SmartSignatureMethod("Test")]
-        public int ApprovePaymentTest(PaymentTransactionReference txn, byte[] signatureR, byte[] signatureS, byte[] startround, byte[] endround)
-        {
-            //NOTE: We can actually use #if DEBUG tags here
-
-
-            //do not allow anything else than a single asset transfer
-            if (GroupSize != 1) return 0;
-
-            //do not permit any kind of rekey
-            if (txn.RekeyTo != ZeroAddress) return 0;
-
-            //make sure only asset transfers are permitted (because the tooling does not yet automatically verify marshalled txns, not sure if it should)
-            string txTypeCheck = "pay";
-            if (txn.TxType != txTypeCheck.ToByteArray()) return 0;
-
-            //reject if Lease is not set
-            //TODO
-
-            //Check that the concatenation of groupid, startround as bytes, endround as bytes, is signed by the address
-            byte[] groupId = GroupId;
-            byte[] message = groupId.Concat(startround);
-            message = groupId.Concat(endround);
-
-            byte[] pubkeyX = { 0xde, 0xad, 0xbe, 0xef }; // to be string replaced by the controller
-            byte[] pubkeyY = { 0xde, 0xad, 0xca, 0xfe }; // to be string replaced by the controller
-
-            bool check = Ecdsa_verify_secp256r1(message, signatureR, signatureS, pubkeyX, pubkeyY);
-
-
-
-            if (check == true) return 1;
-            else return 0;
-        }
+       
 
 
         [SmartSignatureMethod("Ax1")]
@@ -102,7 +68,7 @@ namespace RelyingParty.Algorand.Signatures
             string txTypeCheck = "axfer";
             if (txn.TxType != txTypeCheck.ToByteArray()) return 0;
 
-            //reject if Lease is not set
+            //TODO - reject if Lease is not set
 
             //TODO - Hash the proofKey and check that the signature of concat(hash+startround+endround) is signed by the address.
             

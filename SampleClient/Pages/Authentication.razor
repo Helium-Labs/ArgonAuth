@@ -13,8 +13,6 @@
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject RelyingPartyConnection RPService
 @inject IJSRuntime js
-@inject IDefaultApi algorand
-@inject Algorand.KMD.Api kmdApi
 @inject ProtectedLocalStorage ProtectedLocalStore
 
 <PageTitle>Authentication</PageTitle>
@@ -29,11 +27,11 @@
 
 <button class="btn btn-primary" @onclick="Server">Delegate access to server for transactions (server transactions)</button>
 
-<button class="btn btn-primary" @onclick="SinglePayment">A test function to demonstrate a transaction executed by the server. Payments would not normally be supported.</button>
+
 
 @code {
     private string currentUser = "";
-  
+
 
     //DEMONSTRATE REGISTRATION AT THE SERVER, WHICH ALSO RETURNS AN LSIG FOR AUTONOMOUS TRADING
     private async Task Register()
@@ -80,35 +78,62 @@
         var gameWallet = await ProtectedLocalStore.GetAsync<byte[]>("gamewallet");
         LogicsigSignature lsig = new LogicsigSignature(gameWallet.Value);
 
+        //NOT IMPLEMENTED - THE FLOW WOULD BE
+        // 1. Generate transaction (TODO - Should we offer a service on the server where for users without Algod the server can return transaction parameters?)
+        // 2. Assign Group ID regardless
+        // 3. Generate a challenge of GroupID+RoundStart+RoundEnd and have navigator.credentials sign it
+        // 4. Call the ApproveTransferClient method on the sig signer proxy to configure it (or if using JS, set the arguments manually)
+        // Sign tx with logicsig and send
 
-        //NOT IMPLEMENTED
-        
+    }
 
-        
+    //NOTE
+    private byte[] ulongToBigEndianBytes(ulong l){
+        IEnumerable<byte> res= BitConverter.GetBytes(l);
+        if (BitConverter.IsLittleEndian){
+            res=res.Reverse();
+        }
+        return res.ToArray();
     }
 
 
-    
-    
     //DEMONSTRATE ESTABLISHING DELEGATED ACCESS TO THE SERVER
     private async Task Server()
     {
-        //TODO
+        //DEMO CODE.
+        string username = "TestUser2";
+        string user_verification = "preferred";
+
         // 1.Call a flavour of the "sign in" method that returns a *hash of a randomly generated server secret* as the challenge
+        var assertionOptionsAndRound = await RPService.RelyingParty.AssertionOptionsPostAsync(username, user_verification);
+
         // 2.Concatenate the desired start and end rounds with the hash.
+        ulong round = (ulong)assertionOptionsAndRound.CurrentRound;
+        ulong roundEnd = (ulong)assertionOptionsAndRound.CurrentRound+1000;
+        byte[] roundLittleEndian = ulongToBigEndianBytes(round);
+        byte[] roundEndLittleEndian = ulongToBigEndianBytes(roundEnd);
+
+        byte[] delegationAndAuthenticationChallenge = assertionOptionsAndRound.FidoAssertionOptions.Challenge.Concat(roundLittleEndian).Concat(roundEndLittleEndian).ToArray();
+
         // 3.Have navigator.credentials use that as the sign in challenge
+        assertionOptionsAndRound.FidoAssertionOptions.Challenge = delegationAndAuthenticationChallenge;
+        var jsonSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                Converters = { new ByteArrayConverterForJS(), new StringEnumConverter() }
+            };
+        var assertionOptionsJson = JsonConvert.SerializeObject(assertionOptionsAndRound.FidoAssertionOptions, jsonSettings);
+        string result = await js.InvokeAsync<string>("signIn", assertionOptionsJson);
+
+
         // 4.Return that to the server in a call with the round validity. 
+        
+
         // 5.The server can use the *unhashed* secret + round validity as inputs to one of the lsig methods to sign transactions.
     }
 
-    //DEMONSTRATE A SINGLE TRANSACTION EXECUTED VIA THE SERVER
-    private async Task SinglePayment(){
-        
-        // This is little more than a test function to show that the 
-        // sign in procedure and lsig evaluation works. However, 
-        // single asset transfers effected by the server may be 
-        // desirable.
-    }
+
+    
 
     
 }
