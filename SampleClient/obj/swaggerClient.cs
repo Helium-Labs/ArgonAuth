@@ -203,14 +203,14 @@ namespace GameServer
         }
     
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<AssertionOptions> AssertionOptionsPostAsync(string username, string userVerification)
+        public System.Threading.Tasks.Task<AssertionOptionsResponse> AssertionOptionsPostAsync(string username, string userVerification)
         {
             return AssertionOptionsPostAsync(username, userVerification, System.Threading.CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<AssertionOptions> AssertionOptionsPostAsync(string username, string userVerification, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<AssertionOptionsResponse> AssertionOptionsPostAsync(string username, string userVerification, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/assertionOptions?");
@@ -253,7 +253,7 @@ namespace GameServer
                         var status_ = ((int)response_.StatusCode).ToString();
                         if (status_ == "200") 
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<AssertionOptions>(response_, headers_).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<AssertionOptionsResponse>(response_, headers_).ConfigureAwait(false);
                             return objectResponse_.Object;
                         }
                         else
@@ -263,7 +263,7 @@ namespace GameServer
                             throw new ApiException("The HTTP status code of the response was not expected (" + (int)response_.StatusCode + ").", (int)response_.StatusCode, responseData_, headers_, null);
                         }
             
-                        return default(AssertionOptions);
+                        return default(AssertionOptionsResponse);
                     }
                     finally
                     {
@@ -688,7 +688,7 @@ namespace GameServer
     {
         /// <summary>This member contains the type of the public key credential the caller is referring to.</summary>
         [Newtonsoft.Json.JsonProperty("type", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-
+        
         public PublicKeyCredentialType? Type { get; set; }
     
         /// <summary>This member contains the credential ID of the public key credential the caller is referring to.</summary>
@@ -696,7 +696,7 @@ namespace GameServer
         public byte[] Id { get; set; }
     
         /// <summary>This OPTIONAL member contains a hint as to how the client might communicate with the managing authenticator of the public key credential the caller is referring to.</summary>
-        [Newtonsoft.Json.JsonProperty("transports", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore, ItemConverterType = typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonProperty("transports", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<AuthenticatorTransport> Transports { get; set; }
     
     
@@ -1039,6 +1039,18 @@ namespace GameServer
         /// https://www.w3.org/TR/webauthn/#sctn-uvm-extension</summary>
         [Newtonsoft.Json.JsonProperty("uvm", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<System.Collections.Generic.ICollection<long>> Uvm { get; set; }
+    
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.0.22.0 (Newtonsoft.Json v11.0.0.0)")]
+    public partial class AssertionOptionsResponse 
+    {
+        [Newtonsoft.Json.JsonProperty("fidoAssertionOptions", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public AssertionOptions FidoAssertionOptions { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("currentRound", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public long CurrentRound { get; set; }
     
     
     }

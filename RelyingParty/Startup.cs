@@ -7,6 +7,7 @@ using RelyingParty.Algorand.ServerAccount;
 using RelyingParty.OpenAPI;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Algorand.KMD;
 
 namespace RelyingParty;
 
@@ -63,7 +64,7 @@ public class Startup
 
         //Algod
         services.AddSingleton<IDefaultApi>(SetUpAlgodConnection());
-        
+        services.AddSingleton<IApi>(SetupKmdApi());
         
         // Transient alternative
         // services.AddTransient<MySqlConnection>(_ => new MySqlConnection());
@@ -106,6 +107,17 @@ public class Startup
         var algodApiInstance = new DefaultApi(httpClient);
 
         return algodApiInstance;
+    }
+
+    private Api SetupKmdApi()
+    {
+        var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("X-KMD-API-Token", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        
+        Api kmdApi = new Api(client);
+        kmdApi.BaseUrl = @"http://localhost:4002";
+
+        return kmdApi;
     }
 
 

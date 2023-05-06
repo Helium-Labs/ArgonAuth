@@ -21,7 +21,7 @@ async function getCredential(makeAssertionOptions) {
 }
 
 async function createCredential(makeCredentialOptions) {
-    debugger;
+
     let credential;
 
     
@@ -54,6 +54,42 @@ async function createCredential(makeCredentialOptions) {
 
     const json = JSON.stringify(serializeable);
     
+    return json;
+}
+
+async function signIn(assertionOptionsJson) {
+    // ask browser for credentials (browser will ask connected authenticators)
+    debugger;
+
+    assertionOptions = JSON.parse(assertionOptionsJson);
+    assertionOptions.challenge = new Uint8Array(assertionOptions.challenge);
+
+    let credential;
+    try {
+        credential = await navigator.credentials.get({ publicKey: assertionOptions })
+    } catch (err) {
+        alert(err.message ? err.message : err);
+    }
+
+    // Move data into Arrays incase it is super long
+    let authData = bufferToBase64(credential.response.authenticatorData);
+    let clientDataJSON = new bufferToBase64(credential.response.clientDataJSON);
+    let rawId = new bufferToBase64(credential.rawId);
+    let sig = new bufferToBase64(credential.response.signature);
+    const serializable = {
+        id: window.btoa(credential.id),
+        rawId: rawId,
+        type: credential.type,
+        extensions: credential.getClientExtensionResults(),
+        response: {
+            authenticatorData: authData,
+            clientDataJSON: clientDataJSON,
+            signature: sig
+        }
+    };
+
+    const json = JSON.stringify(serializable);
+
     return json;
 }
 

@@ -12,6 +12,11 @@ using System.Configuration;
 using Fido2NetLib.Cbor;
 using Algorand.Algod;
 using RelyingParty.Algorand.Signatures;
+using Algorand.KMD;
+using Algorand.Algod.Model;
+using Algorand;
+using Algorand.Algod.Model.Transactions;
+using Algorand.Utils;
 
 namespace Fido2Demo;
 
@@ -23,15 +28,21 @@ public class Fido2Controller : Controller
     private IDefaultApi _algodApi;
     public static IMetadataService _mds;
     public static PlanetScaleDatabase _db;
+    private static Api _kmdApi;
+    private const string walletName = "unencrypted-default-wallet";
+    //DEMO CODE
+    private static Account account1; 
+    private static Account account2;
+    private static Account account3;
 
 
-    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, IDefaultApi algod, PlanetScaleDatabase database)
+    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, IDefaultApi algod, IApi kmdApi ,PlanetScaleDatabase database)
     {
         _algodApi = algod;
         _fido2 = fido2;
         _serverAccount = serverAccount;
         _db = database;
-
+        _kmdApi = (Api)kmdApi;
     }
 
     private string FormatException(Exception e)
@@ -147,6 +158,8 @@ public class Fido2Controller : Controller
             //TODO - compile should accept IDefaultApi and IDefaultApi should have a meaningful name that doesnt rely on its namespace
             var lsigCompiled = await lsig.Compile((DefaultApi)_algodApi);
 
+            await preFundLsig(lsigCompiled);
+
             MakeCredentialResponse response = new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult = success,
@@ -165,9 +178,39 @@ public class Fido2Controller : Controller
         }
     }
 
+    /// <summary>
+    /// Pre-fund the Lsig with whatever.....
+    /// 
+    /// TODO - Assuming this is going to be a centralised service for game developers, the particular master account, 
+    /// the particular initial funding MBR and assets, would want to come from a config depending on the route.
+    /// 
+    /// 
+    /// </summary>
+    private async Task preFundLsig(LogicsigSignature lsigCompiled)
+    {
+        //DEMO CODE
+        //  Just assume Sandbox here and chuck some funds at the lsig
+
+        var transParams = await _algodApi.TransactionParamsAsync();
+        var payment = PaymentTransaction.GetPaymentTransactionFromNetworkTransactionParameters(account1.Address, lsigCompiled.Address, 1000000, "", transParams);
+        var signed= payment.Sign(account1);
+        try
+        {
+            //send the transaction for processing
+            var txRes = await ((DefaultApi)_algodApi).TransactionsAsync(new List<SignedTransaction> { signed });
+            var resp = await Utils.WaitTransactionToComplete((DefaultApi)_algodApi, txRes.Txid) ;
+
+        }
+        catch (Algorand.ApiException<ErrorResponse> ex)
+        {
+            System.Diagnostics.Trace.WriteLine(ex.ToString());
+        }
+
+    }
+
     [HttpPost]
     [Route("/assertionOptions")]
-    public AssertionOptions AssertionOptionsPost( AssertionOptionsPostModel assertionOptions)
+    public async Task<AssertionOptionsResponse> AssertionOptionsPost( AssertionOptionsPostModel assertionOptions)
     {
         try
         {
@@ -195,21 +238,36 @@ public class Fido2Controller : Controller
                 exts
             );
 
+            // DEMO: Replace the Challenge with a hashed Challenge
+            var hashedChallenge=Digester.Digest(options.Challenge);
+            HttpContext.Session.SetString("gradian.delegationSecret", options.ToJson()); 
+            options.Challenge=hashedChallenge;
+
             // 4. Temporarily store options, session/in-memory cache/redis/db
             HttpContext.Session.SetString("fido2.assertionOptions", options.ToJson());
 
+            var transParams = await _algodApi.TransactionParamsAsync();
+
             // 5. Return options to client
-            return options;
+            return new AssertionOptionsResponse() { FidoAssertionOptions = options, CurrentRound = transParams.LastRound };
         }
         catch (Exception e)
         {
-            return new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) };
+            return new AssertionOptionsResponse() { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
         }
     }
-
+    private byte[] ulongToBigEndianBytes(ulong l)
+    {
+        IEnumerable<byte> res = BitConverter.GetBytes(l);
+        if (BitConverter.IsLittleEndian)
+        {
+            res = res.Reverse();
+        }
+        return res.ToArray();
+    }
     [HttpPost]
-    [Route("/makeAssertion")]
-    public async Task<AssertionVerificationResult> MakeAssertion( AuthenticatorAssertionRawResponse clientResponse, CancellationToken cancellationToken)
+    [Route("/makeAssertionAndDelegateAccess")]
+    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess( AuthenticatorAssertionRawResponse clientResponse, ulong roundStart, ulong roundEnd, CancellationToken cancellationToken)
     {
         try
         {
@@ -231,10 +289,29 @@ public class Fido2Controller : Controller
             };
 
             // 5. Make the assertion
+
+            // DEMO : modify the challenge to contain the bigendian concatenation of roundstart and roundend
+            options.Challenge = options.Challenge.Concat(ulongToBigEndianBytes(roundStart)).Concat(ulongToBigEndianBytes(roundEnd)).ToArray();
+
             var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback, cancellationToken: cancellationToken);
 
             // 6. Store the updated counter
             _db.UpdateCounter(res.CredentialId, res.Counter);
+
+            // DEMO: now let's test the lsig to prove that delegation worked (or not)
+            var origOptionsJson = HttpContext.Session.GetString("gradian.delegationSecret");
+            var origOptions = AssertionOptions.FromJson(origOptionsJson);
+            byte[] serverSecret = origOptions.Challenge;
+            var decodedPubKey = (CborMap)CborObject.Decode(creds.PublicKey);
+            byte[] pubkeyX = (byte[])decodedPubKey.GetValue(-2);
+            byte[] pubkeyY = (byte[])decodedPubKey.GetValue(-3);
+            var lsig = new AccountGameWallet(pubkeyX, pubkeyY);
+            var compiledSig = await lsig.Compile((DefaultApi)_algodApi);
+            //get the signer proxy
+            var proxy = new GameWalletProxy(compiledSig);
+            //TODO - the sig just needs splitting?
+            proxy.ApproveTransferDelegated(clientResponse.Response.Signature, clientResponse.Response.Signature, serverSecret, roundStart, roundEnd);
+
 
             // 7. return OK to client
             return res;
@@ -243,5 +320,41 @@ public class Fido2Controller : Controller
         {
             return new AssertionVerificationResult { Status = "error", ErrorMessage = FormatException(e) };
         }
+    }
+
+    private static async Task SetUpAccounts()
+    {
+        var accounts = await getDefaultWallet();
+
+        //get accounts based on the above private keys using the .NET SDK
+        account1 = accounts[0];
+        account2 = accounts[1];
+        account3 = accounts[2];
+    }
+
+    private static async Task<List<Account>> getDefaultWallet()
+    {
+        string handle = await getWalletHandleToken();
+        var accs = await _kmdApi.ListKeysInWalletAsync(new ListKeysRequest() { Wallet_handle_token = handle });
+        if (accs.Addresses.Count < 3) throw new Exception("Sandbox should offer minimum of 3 demo accounts.");
+
+        List<Account> accounts = new List<Account>();
+        foreach (var a in accs.Addresses)
+        {
+
+            var resp = await _kmdApi.ExportKeyAsync(new ExportKeyRequest() { Address = a, Wallet_handle_token = handle, Wallet_password = "" });
+            Account account = new Account(resp.Private_key);
+            accounts.Add(account);
+        }
+        return accounts;
+
+    }
+
+    private static async Task<string> getWalletHandleToken()
+    {
+        var wallets = await _kmdApi.ListWalletsAsync(null);
+        var wallet = wallets.Wallets.Where(w => w.Name == walletName).FirstOrDefault();
+        var handle = await _kmdApi.InitWalletHandleTokenAsync(new InitWalletHandleTokenRequest() { Wallet_id = wallet.Id, Wallet_password = "" });
+        return handle.Wallet_handle_token;
     }
 }
