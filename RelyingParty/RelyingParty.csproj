@@ -32,7 +32,6 @@
   <ItemGroup>
     <Folder Include="Data\" />
     <Folder Include="OpenAPI\" />
-    <Folder Include="Optimisers\" />
   </ItemGroup>
   <ProjectExtensions><VisualStudio><UserProperties /></VisualStudio></ProjectExtensions>
 </Project>
