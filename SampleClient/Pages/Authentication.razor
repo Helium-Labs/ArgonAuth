@@ -1,0 +1,140 @@
+﻿@page "/counter"
+@using Algorand
+@using Algorand.KMD
+@using Algorand.Algod
+@using Algorand.Algod.Model
+@using Algorand.Algod.Model.Transactions
+@using GameServer
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Converters
+@using Newtonsoft.Json.Serialization
+@using SampleClient.Data
+@using Newtonsoft
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject RelyingPartyConnection RPService
+@inject IJSRuntime js
+@inject ProtectedLocalStorage ProtectedLocalStore
+
+<PageTitle>Authentication</PageTitle>
+
+<h1>Authentication</h1>
+
+<p role="status">Current user: @currentUser</p>
+
+<button class="btn btn-primary" @onclick="Register">Register</button>
+
+<button class="btn btn-primary" @onclick="Local">Execute autonomous transaction (local transaction)</button>
+
+<button class="btn btn-primary" @onclick="Server">Delegate access to server for transactions (server transactions)</button>
+
+
+
+@code {
+    private string currentUser = "";
+
+
+    //DEMONSTRATE REGISTRATION AT THE SERVER, WHICH ALSO RETURNS AN LSIG FOR AUTONOMOUS TRADING
+    private async Task Register()
+    {
+        //DEMO CODE. This would be ordinarily be taken from the UI,
+        //and in theory the username is not even necessary.
+        string username="TestUser2";
+        string displayName = "Mr. Test User";
+        string attestationType = "none";
+        string authenticator_attachment = "crossPlatform";
+        bool resident_key = false;
+        string user_verification = "preferred";
+
+        //Call the swagger code-gen'd proxy to get the supported options for creating a credential
+        var credentialCreationOptions= await RPService.RelyingParty.MakeCredentialOptionsAsync(username, displayName, attestationType, authenticator_attachment, resident_key, user_verification);
+
+        //Convert to json in a navigator.credentials friendly way
+        var jsonSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                Converters = { new ByteArrayConverterForJS(), new StringEnumConverter() }
+            };
+        var makeCredentialOptionsJson = JsonConvert.SerializeObject(credentialCreationOptions, jsonSettings);
+
+        //Ask the browser for a new credential
+        string result= await js.InvokeAsync<string>("createCredential", makeCredentialOptionsJson);
+
+        AuthenticatorAttestationRawResponse credentials = JsonConvert.DeserializeObject<AuthenticatorAttestationRawResponse>(result);
+
+        MakeCredentialResponse? credentialResult = await RPService.RelyingParty.MakeCredentialAsync(credentials);
+        if (credentialResult!=null)
+        {
+            //NOTE Stash the lsig in something like secure storage
+            await ProtectedLocalStore.SetAsync("gamewallet", credentialResult.LogicSignatureProgram);
+        }
+
+    }
+
+
+    //DEMONSTRATE AN AUTONOMOUS TRANSACTION WHERE THE CLIENT HAS THEIR OWN ALGOD NODE OR ACCESS AND USES THEIR LSIG
+    //TO EXECUTE A TRANSACTION
+    private async Task Local(){
+        //1. Load our "GameWallet" (a lsig)
+        var gameWallet = await ProtectedLocalStore.GetAsync<byte[]>("gamewallet");
+        LogicsigSignature lsig = new LogicsigSignature(gameWallet.Value);
+
+        //NOT IMPLEMENTED - THE FLOW WOULD BE
+        // 1. Generate transaction (TODO - Should we offer a service on the server where for users without Algod the server can return transaction parameters?)
+        // 2. Assign Group ID regardless
+        // 3. Generate a challenge of GroupID+RoundStart+RoundEnd and have navigator.credentials sign it
+        // 4. Call the ApproveTransferClient method on the sig signer proxy to configure it (or if using JS, set the arguments manually)
+        // Sign tx with logicsig and send
+
+    }
+
+    //NOTE
+    private byte[] ulongToBigEndianBytes(ulong l){
+        IEnumerable<byte> res= BitConverter.GetBytes(l);
+        if (BitConverter.IsLittleEndian){
+            res=res.Reverse();
+        }
+        return res.ToArray();
+    }
+
+
+    //DEMONSTRATE ESTABLISHING DELEGATED ACCESS TO THE SERVER
+    private async Task Server()
+    {
+        //DEMO CODE.
+        string username = "TestUser2";
+        string user_verification = "preferred";
+
+        // 1.Call a flavour of the "sign in" method that returns a *hash of a randomly generated server secret* as the challenge
+        var assertionOptionsAndRound = await RPService.RelyingParty.AssertionOptionsPostAsync(username, user_verification);
+
+        // 2.Concatenate the desired start and end rounds with the hash.
+        ulong round = (ulong)assertionOptionsAndRound.CurrentRound;
+        ulong roundEnd = (ulong)assertionOptionsAndRound.CurrentRound+1000;
+        byte[] roundLittleEndian = ulongToBigEndianBytes(round);
+        byte[] roundEndLittleEndian = ulongToBigEndianBytes(roundEnd);
+
+        byte[] delegationAndAuthenticationChallenge = assertionOptionsAndRound.FidoAssertionOptions.Challenge.Concat(roundLittleEndian).Concat(roundEndLittleEndian).ToArray();
+
+        // 3.Have navigator.credentials use that as the sign in challenge
+        assertionOptionsAndRound.FidoAssertionOptions.Challenge = delegationAndAuthenticationChallenge;
+        var jsonSettings = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                Converters = { new ByteArrayConverterForJS(), new StringEnumConverter() }
+            };
+        var assertionOptionsJson = JsonConvert.SerializeObject(assertionOptionsAndRound.FidoAssertionOptions, jsonSettings);
+        string result = await js.InvokeAsync<string>("signIn", assertionOptionsJson);
+
+
+        // 4.Return that to the server in a call with the round validity. 
+        
+
+        // 5.The server can use the *unhashed* secret + round validity as inputs to one of the lsig methods to sign transactions.
+    }
+
+
+    
+
+    
+}
+
