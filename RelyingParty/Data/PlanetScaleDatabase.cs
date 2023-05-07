@@ -132,7 +132,7 @@ public class PlanetScaleDatabase
             cmd.Parameters.AddWithValue("@signature_counter", storedCredential.SignatureCounter);
             cmd.Parameters.AddWithValue("@cred_type", storedCredential.CredType);
             cmd.Parameters.AddWithValue("@reg_date", storedCredential.RegDate);
-            cmd.Parameters.AddWithValue("@aa_guid", storedCredential.AaGuid);
+            cmd.Parameters.AddWithValue("@aa_guid","test");
             cmd.ExecuteNonQuery();
         }
 
