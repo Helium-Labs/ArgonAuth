@@ -14,7 +14,6 @@ namespace RelyingParty;
 public class Startup
 {
 
-
     public Startup(IConfiguration configuration)
     {
         Configuration = configuration;
@@ -29,12 +28,13 @@ public class Startup
         // Add CORS services and configure the policy
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAllOrigins",
+            options.AddPolicy("AllowSpecificOrigins",
                 builder =>
                 {
-                    builder.AllowAnyOrigin()
+                    builder.WithOrigins("https://keychain-client-zeta.vercel.app")
                            .AllowAnyMethod()
-                           .AllowAnyHeader();
+                           .AllowAnyHeader()
+                           .AllowCredentials(); // Allow credentials explicitly
                 });
         });
 
@@ -92,12 +92,7 @@ public class Startup
             configure.GenerateEnumMappingDescription = false;
         });
 
-        
-
-
     }
-
-
 
 
     private  DefaultApi SetUpAlgodConnection()
@@ -120,7 +115,6 @@ public class Startup
         return kmdApi;
     }
 
-
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
@@ -133,7 +127,8 @@ public class Startup
         app.UseHttpsRedirection();
 
         // Enable CORS with the policy created in ConfigureServices
-        app.UseCors("AllowAllOrigins");
+        // app.UseCors("AllowAllOrigins");
+        app.UseCors("AllowSpecificOrigins");
 
         app.UseRouting();
 

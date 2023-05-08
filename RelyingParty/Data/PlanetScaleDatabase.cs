@@ -1,36 +1,46 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Fido2NetLib.Development;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using MySql.Data.MySqlClient;
+using System.Threading;
+
 public class PlanetScaleDatabase
 {
     private MySqlConnection _conn;
-
+    private readonly string _connectionString;
     public PlanetScaleDatabase(string connectionString)
     {
         _conn = new MySqlConnection(connectionString);
+        _connectionString = connectionString;
     }
 
-    public Fido2User GetOrAddUser(string username, Func<Fido2User> createUserFunc)
+    public async Task<MySqlConnection> GetMySqlConnection(CancellationToken cancellationToken = default)
     {
-        Fido2User user = null;
+        _conn ??= new MySqlConnection(_connectionString);
+        if(_conn.State != ConnectionState.Open)
+        {
+            // it's not open yet, so open it. Don't open a connection that's already open.
+            await _conn.OpenAsync(cancellationToken);
+        }
+        return _conn;
+    }
 
-        _conn.Open();
+    public async Task<Fido2User> GetOrAddUser(string username, Func<Fido2User> createUserFunc)
+    {
 
-        using (var cmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", _conn))
+        var conn = await GetMySqlConnection();
+        
+        // Read and return the user if it already exists
+        using (var cmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", conn))
         {
             cmd.Parameters.AddWithValue("@username", username);
             using (var reader = cmd.ExecuteReader())
             {
                 if (reader.Read())
                 {
-                    user = new Fido2User
+                    return new Fido2User
                     {
                         DisplayName = reader.GetString("display_name"),
                         Name = reader.GetString("username"),
@@ -40,31 +50,26 @@ public class PlanetScaleDatabase
             }
         }
 
-        if (user == null)
+        // user does not exist. Create it and return it
+        Fido2User user = createUserFunc();
+        using (var cmd = new MySqlCommand("INSERT INTO users (username, display_name, user_id) VALUES (@username, @display_name, @user_id)", conn))
         {
-            user = createUserFunc();
-
-            using (var cmd = new MySqlCommand("INSERT INTO users (username, display_name, user_id) VALUES (@username, @display_name, @user_id)", _conn))
-            {
-                cmd.Parameters.AddWithValue("@username", user.Name);
-                cmd.Parameters.AddWithValue("@display_name", user.DisplayName);
-                cmd.Parameters.AddWithValue("@user_id", user.Id);
-                cmd.ExecuteNonQuery();
-            }
+            cmd.Parameters.AddWithValue("@username", user.Name);
+            cmd.Parameters.AddWithValue("@display_name", user.DisplayName);
+            cmd.Parameters.AddWithValue("@user_id", user.Id);
+            cmd.ExecuteNonQuery();
         }
-
-        _conn.Close();
-
+        
         return user;
     }
 
-    public List<StoredCredential> GetCredentialsByUser(Fido2User user)
+    public async Task<List<StoredCredential>> GetCredentialsByUser(Fido2User user)
     {
         var credentials = new List<StoredCredential>();
-
-        _conn.Open();
-
-        using (var cmd = new MySqlCommand("SELECT * FROM credentials WHERE user_id = @user_id", _conn))
+            
+        var conn = await GetMySqlConnection();
+    
+        using (var cmd = new MySqlCommand("SELECT * FROM credentials WHERE user_id = @user_id", conn))
         {
             cmd.Parameters.AddWithValue("@user_id", user.Id);
 
@@ -86,8 +91,6 @@ public class PlanetScaleDatabase
             }
         }
 
-        _conn.Close();
-
         return credentials;
     }
 
@@ -95,9 +98,9 @@ public class PlanetScaleDatabase
     {
         var users = new List<Fido2User>();
 
-        await _conn.OpenAsync(cancellationToken);
+        var conn = await GetMySqlConnection(cancellationToken);
 
-        using (var cmd = new MySqlCommand("SELECT u.* FROM users u JOIN credentials c ON u.user_id = c.user_id WHERE c.credential_id = @credential_id", _conn))
+        using (var cmd = new MySqlCommand("SELECT u.* FROM users u JOIN credentials c ON u.user_id = c.user_id WHERE c.credential_id = @credential_id", conn))
         {
             cmd.Parameters.AddWithValue("@credential_id", credentialId);
 
@@ -115,16 +118,14 @@ public class PlanetScaleDatabase
             }
         }
 
-        _conn.Close();
-
         return users;
     }
 
-    public void AddCredentialToUser(Fido2User
-        user, StoredCredential storedCredential)
+    public async void AddCredentialToUser(Fido2User user, StoredCredential storedCredential)
     {
-        _conn.Open();
-        using (var cmd = new MySqlCommand("INSERT INTO credentials (credential_id, public_key, user_id, signature_counter, cred_type, reg_date, aa_guid) VALUES (@credential_id, @public_key, @user_id, @signature_counter, @cred_type, @reg_date, @aa_guid)", _conn))
+        var conn = await GetMySqlConnection();
+
+        using (var cmd = new MySqlCommand("INSERT INTO credentials (credential_id, public_key, user_id, signature_counter, cred_type, reg_date, aa_guid) VALUES (@credential_id, @public_key, @user_id, @signature_counter, @cred_type, @reg_date, @aa_guid)", conn))
         {
             cmd.Parameters.AddWithValue("@credential_id", storedCredential.Descriptor.Id);
             cmd.Parameters.AddWithValue("@public_key", storedCredential.PublicKey);
@@ -135,24 +136,20 @@ public class PlanetScaleDatabase
             cmd.Parameters.AddWithValue("@aa_guid","test");
             cmd.ExecuteNonQuery();
         }
-
-        _conn.Close();
     }
 
-    public Fido2User GetUser(string username)
+    public async Task<Fido2User?> GetUser(string username)
     {
-        Fido2User user = null;
+        var conn = await GetMySqlConnection();
 
-        _conn.Open();
-
-        using (var cmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", _conn))
+        using (var cmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", conn))
         {
             cmd.Parameters.AddWithValue("@username", username);
             using (var reader = cmd.ExecuteReader())
             {
                 if (reader.Read())
                 {
-                    user = new Fido2User
+                    return new Fido2User
                     {
                         DisplayName = reader.GetString("display_name"),
                         Name = reader.GetString("username"),
@@ -162,25 +159,22 @@ public class PlanetScaleDatabase
             }
         }
 
-        _conn.Close();
-
-        return user;
+        return null;
     }
 
-    public StoredCredential GetCredentialById(byte[] id)
+    public async Task<StoredCredential?> GetCredentialById(byte[] id)
     {
-        StoredCredential credential = null;
 
-        _conn.Open();
+        var conn = await GetMySqlConnection();
 
-        using (var cmd = new MySqlCommand("SELECT * FROM credentials WHERE credential_id = @credential_id", _conn))
+        using (var cmd = new MySqlCommand("SELECT * FROM credentials WHERE credential_id = @credential_id", conn))
         {
             cmd.Parameters.AddWithValue("@credential_id", id);
             using (var reader = cmd.ExecuteReader())
             {
                 if (reader.Read())
                 {
-                    credential = new StoredCredential
+                    return new StoredCredential
                     {
                         Descriptor = new PublicKeyCredentialDescriptor((byte[])reader["credential_id"]),
                         PublicKey = (byte[])reader["public_key"],
@@ -194,18 +188,17 @@ public class PlanetScaleDatabase
             }
         }
 
-        _conn.Close();
+        conn.Close();
 
-        return credential;
+        return null;
     }
 
     public async Task<List<StoredCredential>> GetCredentialsByUserHandleAsync(byte[] userHandle, CancellationToken cancellationToken)
     {
         var credentials = new List<StoredCredential>();
+        var conn = await GetMySqlConnection(cancellationToken);
 
-        await _conn.OpenAsync(cancellationToken);
-
-        using (var cmd = new MySqlCommand("SELECT * FROM credentials WHERE user_id = @user_id", _conn))
+        using (var cmd = new MySqlCommand("SELECT * FROM credentials WHERE user_id = @user_id", conn))
         {
             cmd.Parameters.AddWithValue("@user_id", userHandle);
 
@@ -227,21 +220,18 @@ public class PlanetScaleDatabase
             }
         }
 
-        _conn.Close();
-
         return credentials;
     }
 
-    public void UpdateCounter(byte[] credentialId, uint counter)
+    public async void UpdateCounter(byte[] credentialId, uint counter)
     {
-        _conn.Open();
+        var conn = await GetMySqlConnection();
 
-        using (var cmd = new MySqlCommand("UPDATE credentials SET signature_counter = @counter WHERE credential_id = @credential_id", _conn))
+        using (var cmd = new MySqlCommand("UPDATE credentials SET signature_counter = @counter WHERE credential_id = @credential_id", conn))
         {
             cmd.Parameters.AddWithValue("@counter", counter);
             cmd.Parameters.AddWithValue("@credential_id", credentialId);
             cmd.ExecuteNonQuery();
         }
-        _conn.Close();
     }
 }

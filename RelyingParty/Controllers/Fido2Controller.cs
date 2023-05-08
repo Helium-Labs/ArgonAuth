@@ -54,7 +54,7 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeCredentialOptions")]
-    public CredentialCreateOptions MakeCredentialOptions(MakeCredentialOptionsModel model)
+    public async Task<CredentialCreateOptions> MakeCredentialOptions(MakeCredentialOptionsModel model)
     {
         try
         {
@@ -65,7 +65,7 @@ public class Fido2Controller : Controller
             }
 
             // 1. Get user from DB by username (in our example, auto create missing users)
-            var user = _db.GetOrAddUser(model.Username, () => new Fido2User
+            var user = await _db.GetOrAddUser(model.Username, () => new Fido2User
             {
                 DisplayName = model.DisplayName,
                 Name = model.Username,
@@ -73,7 +73,8 @@ public class Fido2Controller : Controller
             });
 
             // 2. Get user existing keys by username
-            var existingKeys = _db.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
+            var cred = await _db.GetCredentialsByUser(user);
+            var existingKeys = cred.Select(c => c.Descriptor).ToList();
 
             // 3. Create options
             var authenticatorSelection = new AuthenticatorSelection
@@ -128,13 +129,18 @@ public class Fido2Controller : Controller
             // 2. Verify and make the credentials
             var success = await _fido2.MakeNewCredentialAsync(attestationResponse, options, callback, cancellationToken: cancellationToken);
 
+            if (success.Result == null)
+            {
+                throw new Fido2VerificationException("Credential creation failed");
+            }
+
             // 3. Store the credentials in db
 
             //TODO:
-
+            byte[] CredentialId = success.Result.CredentialId;
             _db.AddCredentialToUser(options.User, new StoredCredential
             {
-                Descriptor = new PublicKeyCredentialDescriptor(success.Result.CredentialId),
+                Descriptor = new PublicKeyCredentialDescriptor(CredentialId),
                 PublicKey = success.Result.PublicKey,
                 UserHandle = success.Result.User.Id,
                 SignatureCounter = success.Result.Counter,
@@ -178,7 +184,7 @@ public class Fido2Controller : Controller
             return new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult = new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
-                LogicSignatureProgram = null
+                // LogicSignatureProgram = null
             };
         }
     }
@@ -224,10 +230,10 @@ public class Fido2Controller : Controller
             if (!string.IsNullOrEmpty(assertionOptions.Username))
             {
                 // 1. Get user from DB
-                var user = _db.GetUser(assertionOptions.Username) ?? throw new ArgumentException("Username was not registered");
-
+                var user = await _db.GetUser(assertionOptions.Username) ?? throw new ArgumentException("Username was not registered");
                 // 2. Get registered credentials from database
-                existingCredentials = _db.GetCredentialsByUser(user).Select(c => c.Descriptor).ToList();
+                var cred = await _db.GetCredentialsByUser(user);
+                existingCredentials = cred.Select(c => c.Descriptor).ToList();
             }
             
             //TODO verify PK and change db schema
@@ -288,7 +294,7 @@ public class Fido2Controller : Controller
             var options = AssertionOptions.FromJson(jsonOptions);
 
             // 2. Get registered credential from database
-            var creds = _db.GetCredentialById(clientResponse.Id) ?? throw new Exception("Unknown credentials");
+            var creds = await _db.GetCredentialById(clientResponse.Id) ?? throw new Exception("Unknown credentials");
 
             // 3. Get credential counter from database
             var storedCounter = creds.SignatureCounter;
@@ -359,7 +365,6 @@ public class Fido2Controller : Controller
             accounts.Add(account);
         }
         return accounts;
-
     }
 
     private static async Task<string> getWalletHandleToken()
