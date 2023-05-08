@@ -13,7 +13,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Readme.md = Readme.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SampleClient", "SampleClient\SampleClient.csproj", "{AB3AD290-88B7-400A-B8DD-129D3AD87818}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

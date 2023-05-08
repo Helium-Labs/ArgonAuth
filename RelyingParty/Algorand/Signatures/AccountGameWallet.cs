@@ -13,8 +13,6 @@ namespace RelyingParty.Algorand.Signatures
             //TODO need to dream up a better way I guess
             program = lsig.Program.Replace("DEADBEEF", Convert.ToHexString(pubKeyX));
             program = program.Replace("DEADCAFE", Convert.ToHexString(pubkeyY));
-
-
         }
 
         public string Program => program;
