@@ -56,8 +56,7 @@ public class Startup
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
-                })
-                ;
+                });
 
         string connectionString = Configuration["ConnectionStrings:Default"];
         services.AddSingleton(new PlanetScaleDatabase(connectionString));
@@ -66,9 +65,6 @@ public class Startup
         services.AddSingleton<IDefaultApi>(SetUpAlgodConnection());
         services.AddSingleton<IApi>(SetupKmdApi());
         
-        // Transient alternative
-        // services.AddTransient<MySqlConnection>(_ => new MySqlConnection());
-
         services.AddFido2(options =>
         {
             options.ServerDomain = Configuration["fido2:serverDomain"];
