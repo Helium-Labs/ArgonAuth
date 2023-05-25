@@ -28,25 +28,29 @@ public class Fido2Controller : Controller
     public static IMetadataService _mds;
     public static PlanetScaleDatabase _db;
     private static Api _kmdApi;
+
     private const string walletName = "unencrypted-default-wallet";
+
     //DEMO CODE
-    private static Account account1; 
+    private static Account account1;
     private static Account account2;
     private static Account account3;
 
 
-    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, IDefaultApi algod, IApi kmdApi ,PlanetScaleDatabase database)
+    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, IDefaultApi algod, IApi kmdApi,
+        PlanetScaleDatabase database)
     {
         _algodApi = algod;
         _fido2 = fido2;
         _serverAccount = serverAccount;
         _db = database;
-        _kmdApi = (Api)kmdApi;       
+        _kmdApi = (Api)kmdApi;
     }
 
     private string FormatException(Exception e)
     {
-        return string.Format("{0}{1}", e.Message, e.InnerException != null ? " (" + e.InnerException.Message + ")" : "");
+        return string.Format("{0}{1}", e.Message,
+            e.InnerException != null ? " (" + e.InnerException.Message + ")" : "");
     }
 
     [HttpPost]
@@ -80,7 +84,7 @@ public class Fido2Controller : Controller
             };
 
             if (!string.IsNullOrEmpty(model.AuthType))
-                authenticatorSelection.AuthenticatorAttachment = model.AuthType.ToEnum<AuthenticatorAttachment>();  
+                authenticatorSelection.AuthenticatorAttachment = model.AuthType.ToEnum<AuthenticatorAttachment>();
 
             var exts = new AuthenticationExtensionsClientInputs()
             {
@@ -88,14 +92,15 @@ public class Fido2Controller : Controller
                 UserVerificationMethod = true,
             };
 
-            var options = _fido2.RequestNewCredential(user, existingKeys, authenticatorSelection, model.AttType.ToEnum<AttestationConveyancePreference>(), exts);
+            var options = _fido2.RequestNewCredential(user, existingKeys, authenticatorSelection,
+                model.AttType.ToEnum<AttestationConveyancePreference>(), exts);
             options.PubKeyCredParams = options.PubKeyCredParams.Where(o => o.Alg == COSE.Algorithm.ES256).ToList();
             // 4. Temporarily store options, session/in-memory cache/redis/db
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
             sessionJson["fido2.attestationOptions"] = options.ToJson();
             string sessionJsonString = _db.CreateJsonFromDictionary(sessionJson);
             await _db.UpdateUserJsonMetadata(model.Username, sessionJsonString);
-            
+
             // 5. return options to client
             return options;
         }
@@ -107,23 +112,27 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeCredential")]
-    public async Task<MakeCredentialResponse> MakeCredential(string username, [FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
+    public async Task<MakeCredentialResponse> MakeCredential(string username,
+        [FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
     {
         try
         {
             // 1. get the options we sent the client
             string? jsonKVStore = await _db.GetUserJsonMetadata(username);
-            if(jsonKVStore == null)
+            if (jsonKVStore == null)
             {
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
+
             Dictionary<string, string>? sessionDict = _db.CreateDictionaryFromJson(jsonKVStore);
-            if(sessionDict == null)
+            if (sessionDict == null)
             {
-                throw new Fido2VerificationException("Failed to parse options from database. Please check your session.");
+                throw new Fido2VerificationException(
+                    "Failed to parse options from database. Please check your session.");
             }
+
             string? jsonOptions = sessionDict["fido2.attestationOptions"];
-            if(jsonOptions == null)
+            if (jsonOptions == null)
             {
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
@@ -142,7 +151,8 @@ public class Fido2Controller : Controller
             };
 
             // 2. Verify and make the credentials
-            var success = await _fido2.MakeNewCredentialAsync(attestationResponse, options, callback, cancellationToken: cancellationToken);
+            CredentialMakeResult success = await _fido2.MakeNewCredentialAsync(attestationResponse, options, callback,
+                cancellationToken: cancellationToken);
             if (success.Result == null)
             {
                 throw new Fido2VerificationException("Credential creation failed");
@@ -151,7 +161,7 @@ public class Fido2Controller : Controller
             // 3. Store the credentials in db
             //TODO:
             byte[] CredentialId = success.Result.CredentialId;
-            _db.AddCredentialToUser(options.User, new StoredCredential
+            await _db.AddCredentialToUser(options.User, new StoredCredential
             {
                 Descriptor = new PublicKeyCredentialDescriptor(CredentialId),
                 PublicKey = success.Result.PublicKey,
@@ -159,16 +169,16 @@ public class Fido2Controller : Controller
                 SignatureCounter = success.Result.Counter,
                 CredType = success.Result.CredType,
                 RegDate = DateTime.UtcNow,
-           //     AaGuid = success.Result.Aaguid
+                //     AaGuid = success.Result.Aaguid
             });
 
             // Remove Certificates from success because System.Text.Json cannot serialize them properly. See https://github.com/passwordless-lib/fido2-net-lib/issues/328
             success.Result.AttestationCertificate = null;
             success.Result.AttestationCertificateChain = null;
 
-
+            /*
             //get pubkey
-            var decodedPubKey=(CborMap)CborObject.Decode(success.Result.PublicKey);
+            var decodedPubKey = (CborMap)CborObject.Decode(success.Result.PublicKey);
             byte[] pubkeyX = (byte[])decodedPubKey.GetValue(-2);
             byte[] pubkeyY = (byte[])decodedPubKey.GetValue(-3);
 
@@ -181,21 +191,22 @@ public class Fido2Controller : Controller
 
             // DEMO CODE
             await SetUpAccounts();
-
             await preFundLsig(lsigCompiled);
-
+            */
             MakeCredentialResponse response = new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult = success,
-                LogicSignatureProgram = lsigCompiled.Logic
+                LogicSignatureProgram = null
             };
+
             return response;
         }
         catch (Exception e)
         {
             return new MakeCredentialResponse()
             {
-                FidoCredentialMakeResult = new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
+                FidoCredentialMakeResult =
+                    new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
                 // LogicSignatureProgram = null
             };
         }
@@ -215,25 +226,25 @@ public class Fido2Controller : Controller
         //  Just assume Sandbox here and chuck some funds at the lsig
 
         var transParams = await _algodApi.TransactionParamsAsync();
-        var payment = PaymentTransaction.GetPaymentTransactionFromNetworkTransactionParameters(account1.Address, lsigCompiled.Address, 1000000, "", transParams);
-        var signed= payment.Sign(account1);
+        var payment = PaymentTransaction.GetPaymentTransactionFromNetworkTransactionParameters(account1.Address,
+            lsigCompiled.Address, 1000000, "", transParams);
+        var signed = payment.Sign(account1);
         try
         {
             //send the transaction for processing
             var txRes = await ((DefaultApi)_algodApi).TransactionsAsync(new List<SignedTransaction> { signed });
-            var resp = await Utils.WaitTransactionToComplete((DefaultApi)_algodApi, txRes.Txid) ;
-
+            var resp = await Utils.WaitTransactionToComplete((DefaultApi)_algodApi, txRes.Txid);
         }
         catch (Algorand.ApiException<ErrorResponse> ex)
         {
             System.Diagnostics.Trace.WriteLine(ex.ToString());
         }
-
     }
 
     [HttpPost]
     [Route("/assertionOptions")]
-    public async Task<AssertionOptionsResponse> AssertionOptionsPost([FromBody] AssertionOptionsPostModel assertionOptions)
+    public async Task<AssertionOptionsResponse> AssertionOptionsPost(
+        [FromBody] AssertionOptionsPostModel assertionOptions)
     {
         try
         {
@@ -242,9 +253,10 @@ public class Fido2Controller : Controller
             {
                 throw new Fido2VerificationException("Username is missing");
             }
-            
+
             // 1. Get user from DB
-            var user = await _db.GetUser(assertionOptions.Username) ?? throw new ArgumentException("Username was not registered");
+            var user = await _db.GetUser(assertionOptions.Username) ??
+                       throw new ArgumentException("Username was not registered");
             // 2. Get registered credentials from database
             var cred = await _db.GetCredentialsByUser(user);
             existingCredentials = cred.Select(c => c.Descriptor).ToList();
@@ -254,14 +266,16 @@ public class Fido2Controller : Controller
             {
                 c.Id = c.Id.Take(64).ToArray();
             }
-            
+
             var exts = new AuthenticationExtensionsClientInputs()
             {
                 UserVerificationMethod = true
             };
-            
+
             // 3. Create options
-            var uv = string.IsNullOrEmpty(assertionOptions.UserVerification) ? UserVerificationRequirement.Discouraged : assertionOptions.UserVerification.ToEnum<UserVerificationRequirement>();
+            var uv = string.IsNullOrEmpty(assertionOptions.UserVerification)
+                ? UserVerificationRequirement.Discouraged
+                : assertionOptions.UserVerification.ToEnum<UserVerificationRequirement>();
             var options = _fido2.GetAssertionOptions(
                 existingCredentials,
                 uv,
@@ -272,17 +286,17 @@ public class Fido2Controller : Controller
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
             sessionJson["gradian.delegationSecret"] = options.ToJson();
             // 4. Temporarily store options, session/in-memory cache/redis/db
-            var hashedChallenge=Digester.Digest(options.Challenge);
-            options.Challenge=hashedChallenge;
+            var hashedChallenge = Digester.Digest(options.Challenge);
+            options.Challenge = hashedChallenge;
             sessionJson["fido2.assertionOptions"] = options.ToJson();
 
             string sessionJsonString = _db.CreateJsonFromDictionary(sessionJson);
             await _db.UpdateUserJsonMetadata(assertionOptions.Username, sessionJsonString);
 
-            var transParams = await _algodApi.TransactionParamsAsync();
+            //var transParams = await _algodApi.TransactionParamsAsync();
 
             // 5. Return options to client
-            return new AssertionOptionsResponse() { FidoAssertionOptions = options, CurrentRound = transParams.LastRound };
+            return new AssertionOptionsResponse() { FidoAssertionOptions = options, CurrentRound = 0};
         }
         catch (Exception e)
         {
@@ -297,33 +311,40 @@ public class Fido2Controller : Controller
         {
             res = res.Reverse();
         }
+
         return res.ToArray();
     }
 
     [HttpPost]
     [Route("/makeAssertionAndDelegateAccess")]
-    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess(string username, [FromBody] AuthenticatorAssertionRawResponse clientResponse, ulong roundStart, ulong roundEnd, CancellationToken cancellationToken)
+    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess(string username,
+        [FromBody] AuthenticatorAssertionRawResponse clientResponse, ulong roundStart, ulong roundEnd,
+        CancellationToken cancellationToken)
     {
         try
         {
             // clientResponse.Id
             // 1. Get the assertion options we sent the client
             string? jsonKVStore = await _db.GetUserJsonMetadata(username);
-            if(jsonKVStore == null)
+            if (jsonKVStore == null)
             {
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
+
             Dictionary<string, string>? sessionDict = _db.CreateDictionaryFromJson(jsonKVStore);
-            if(sessionDict == null)
+            if (sessionDict == null)
             {
-                throw new Fido2VerificationException("Failed to parse options from database. Please check your session.");
+                throw new Fido2VerificationException(
+                    "Failed to parse options from database. Please check your session.");
             }
+
             string? jsonOptions = sessionDict["fido2.assertionOptions"];
             string? origOptionsJson = sessionDict["gradian.delegationSecret"];
-            if(jsonOptions == null || origOptionsJson == null)
+            if (jsonOptions == null || origOptionsJson == null)
             {
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
+
             var options = AssertionOptions.FromJson(jsonOptions);
 
             // 2. Get registered credential from database
@@ -342,14 +363,17 @@ public class Fido2Controller : Controller
             // 5. Make the assertion
 
             // DEMO : modify the challenge to contain the bigendian concatenation of roundstart and roundend
-            options.Challenge = options.Challenge.Concat(ulongToBigEndianBytes(roundStart)).Concat(ulongToBigEndianBytes(roundEnd)).ToArray();
-            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback, cancellationToken: cancellationToken);
+            options.Challenge = options.Challenge.Concat(ulongToBigEndianBytes(roundStart))
+                .Concat(ulongToBigEndianBytes(roundEnd)).ToArray();
+            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback,
+                cancellationToken: cancellationToken);
 
             // 6. Store the updated counter
             _db.UpdateCounter(res.CredentialId, res.Counter);
 
 
             // DEMO: now let's test the lsig to prove that delegation worked (or not)
+            /*
             var origOptions = AssertionOptions.FromJson(origOptionsJson);
             byte[] serverSecret = origOptions.Challenge;
             var decodedPubKey = (CborMap)CborObject.Decode(creds.PublicKey);
@@ -360,8 +384,9 @@ public class Fido2Controller : Controller
             //get the signer proxy
             var proxy = new Proxies.GameWalletProxy(compiledSig);
             //TODO - the sig just needs splitting?
-            proxy.ApproveTransferDelegated(clientResponse.Response.Signature, clientResponse.Response.Signature, serverSecret, roundStart, roundEnd);
-
+            proxy.ApproveTransferDelegated(clientResponse.Response.Signature, clientResponse.Response.Signature,
+                serverSecret, roundStart, roundEnd);
+            */
 
             // 7. return OK to client
             return res;
@@ -391,11 +416,12 @@ public class Fido2Controller : Controller
         List<Account> accounts = new List<Account>();
         foreach (var a in accs.Addresses)
         {
-
-            var resp = await _kmdApi.ExportKeyAsync(new ExportKeyRequest() { Address = a, Wallet_handle_token = handle, Wallet_password = "" });
+            var resp = await _kmdApi.ExportKeyAsync(new ExportKeyRequest()
+                { Address = a, Wallet_handle_token = handle, Wallet_password = "" });
             Account account = new Account(resp.Private_key);
             accounts.Add(account);
         }
+
         return accounts;
     }
 
@@ -403,7 +429,8 @@ public class Fido2Controller : Controller
     {
         var wallets = await _kmdApi.ListWalletsAsync(null);
         var wallet = wallets.Wallets.Where(w => w.Name == walletName).FirstOrDefault();
-        var handle = await _kmdApi.InitWalletHandleTokenAsync(new InitWalletHandleTokenRequest() { Wallet_id = wallet.Id, Wallet_password = "" });
+        var handle = await _kmdApi.InitWalletHandleTokenAsync(new InitWalletHandleTokenRequest()
+            { Wallet_id = wallet.Id, Wallet_password = "" });
         return handle.Wallet_handle_token;
     }
 }

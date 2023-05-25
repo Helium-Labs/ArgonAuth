@@ -31,7 +31,7 @@ public class Startup
             options.AddPolicy("AllowSpecificOrigins",
                 builder =>
                 {
-                    builder.WithOrigins("https://keychain-client-zeta.vercel.app")
+                    builder.WithOrigins("https://keychain-client-zeta.vercel.app", "http://localhost:7123")
                            .AllowAnyMethod()
                            .AllowAnyHeader()
                            .AllowCredentials(); // Allow credentials explicitly

@@ -175,7 +175,7 @@ public class PlanetScaleDatabase
         return dictionary;
     }
 
-    public async void AddCredentialToUser(Fido2User user, StoredCredential storedCredential)
+    public async Task AddCredentialToUser(Fido2User user, StoredCredential storedCredential)
     {
         var conn = await GetMySqlConnection();
 
