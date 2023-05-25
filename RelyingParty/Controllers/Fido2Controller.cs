@@ -260,13 +260,11 @@ public class Fido2Controller : Controller
             var cred = await _db.GetCredentialsByUser(user);
             existingCredentials = cred.Select(c => c.Descriptor).ToList();
 
-            /*
             //TODO verify PK and change db schema
             foreach (var c in existingCredentials)
             {
-                c.Id = c.Id.Take(64).ToArray();
+                c.Id = c.Id.Take(32).ToArray();
             }
-            */
 
             var exts = new AuthenticationExtensionsClientInputs()
             {
