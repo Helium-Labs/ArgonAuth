@@ -6,7 +6,7 @@ namespace RelyingParty.Algorand.Signatures
     {
         private string program;
 
-        public AccountGameWallet(byte[] pubKeyX,byte[] pubkeyY)
+        public AccountGameWallet(byte[] pubKeyX, byte[] pubkeyY)
         {
             var lsig = new GameWallet.BasicSignature();
 

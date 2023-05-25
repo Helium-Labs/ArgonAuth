@@ -1,10 +1,12 @@
 using System.Data;
-using System.Text;
 using Fido2NetLib.Development;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using MySql.Data.MySqlClient;
-using System.Threading;
+using System.Text.Json;
+using Newtonsoft.Json;
+using JsonException = System.Text.Json.JsonException;
+
 
 public class PlanetScaleDatabase
 {
@@ -61,6 +63,21 @@ public class PlanetScaleDatabase
         }
         
         return user;
+    }
+    
+    public async Task UpdateUserJsonMetadata(string username, string newJsonMetadata)
+    {
+        var conn = await GetMySqlConnection();
+
+        // Create the command to update the user's json_metadata
+        using (var cmd = new MySqlCommand("UPDATE users SET json_metadata = @json_metadata WHERE username = @username", conn))
+        {
+            cmd.Parameters.AddWithValue("@username", username);
+            cmd.Parameters.AddWithValue("@json_metadata", newJsonMetadata);
+
+            // Execute the command
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public async Task<List<StoredCredential>> GetCredentialsByUser(Fido2User user)
@@ -120,6 +137,43 @@ public class PlanetScaleDatabase
 
         return users;
     }
+    
+    public string GetValueFromJsonByKey(string jsonString, string key)
+    {
+        try
+        {
+            using JsonDocument doc = JsonDocument.Parse(jsonString);
+            JsonElement root = doc.RootElement;
+
+            if (root.TryGetProperty(key, out JsonElement valueElement))
+            {
+                return valueElement.ToString();
+            }
+            else
+            {
+                throw new KeyNotFoundException($"Key '{key}' not found in the JSON string.");
+            }
+        }
+        catch (JsonException ex)
+        {
+            throw new ArgumentException("Invalid JSON string.", ex);
+        }
+    }
+    public string CreateJsonFromDictionary(Dictionary<string, string> dictionary)
+    {
+        // Serialize the dictionary into a JSON string
+        string json = JsonConvert.SerializeObject(dictionary);
+
+        return json;
+    }
+    
+    public Dictionary<string, string>? CreateDictionaryFromJson(string json)
+    {
+        // Deserialize the JSON string into a dictionary
+        Dictionary<string, string>? dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+
+        return dictionary;
+    }
 
     public async void AddCredentialToUser(Fido2User user, StoredCredential storedCredential)
     {
@@ -158,10 +212,35 @@ public class PlanetScaleDatabase
                 }
             }
         }
-
         return null;
     }
 
+    public async Task<string?> GetUserJsonMetadata(string username)
+    {
+        var conn = await GetMySqlConnection();
+
+        // Create the command to get the user's json_metadata
+        using (var cmd = new MySqlCommand("SELECT json_metadata FROM users WHERE username = @username", conn))
+        {
+            cmd.Parameters.AddWithValue("@username", username);
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    // Get the json_metadata field as a string
+                    return reader.GetString("json_metadata");
+                }
+                else
+                {
+                    // User not found
+                    return null;
+                }
+            }
+        }
+    }
+
+    
     public async Task<StoredCredential?> GetCredentialById(byte[] id)
     {
 

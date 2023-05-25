@@ -4,6 +4,7 @@ CREATE TABLE `users` (
     `username` VARCHAR(255) NOT NULL,
     `display_name` VARCHAR(255) NOT NULL,
     `user_id` BINARY(16) NOT NULL,
+    `json_metadata` VARCHAR(2048), 
     PRIMARY KEY (`id`),
     UNIQUE KEY `user_id` (`user_id`),
     UNIQUE KEY `username` (`username`)

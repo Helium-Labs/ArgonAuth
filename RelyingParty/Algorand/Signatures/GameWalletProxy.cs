@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RelyingParty.Algorand.Signatures
+namespace Proxies
 {
 
 	
