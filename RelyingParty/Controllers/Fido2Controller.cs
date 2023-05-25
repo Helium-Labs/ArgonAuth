@@ -107,7 +107,7 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeCredential")]
-    public async Task<MakeCredentialResponse> MakeCredential([FromBody] string username, [FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
+    public async Task<MakeCredentialResponse> MakeCredential(string username, [FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
     {
         try
         {
@@ -302,7 +302,7 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeAssertionAndDelegateAccess")]
-    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess([FromBody] string username, [FromBody] AuthenticatorAssertionRawResponse clientResponse, [FromBody] ulong roundStart, [FromBody] ulong roundEnd, CancellationToken cancellationToken)
+    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess(string username, [FromBody] AuthenticatorAssertionRawResponse clientResponse, ulong roundStart, ulong roundEnd, CancellationToken cancellationToken)
     {
         try
         {
