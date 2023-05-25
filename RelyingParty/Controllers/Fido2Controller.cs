@@ -159,7 +159,6 @@ public class Fido2Controller : Controller
             }
 
             // 3. Store the credentials in db
-            //TODO:
             byte[] CredentialId = success.Result.CredentialId;
             await _db.AddCredentialToUser(options.User, new StoredCredential
             {
@@ -261,11 +260,13 @@ public class Fido2Controller : Controller
             var cred = await _db.GetCredentialsByUser(user);
             existingCredentials = cred.Select(c => c.Descriptor).ToList();
 
+            /*
             //TODO verify PK and change db schema
             foreach (var c in existingCredentials)
             {
                 c.Id = c.Id.Take(64).ToArray();
             }
+            */
 
             var exts = new AuthenticationExtensionsClientInputs()
             {
@@ -276,6 +277,7 @@ public class Fido2Controller : Controller
             var uv = string.IsNullOrEmpty(assertionOptions.UserVerification)
                 ? UserVerificationRequirement.Discouraged
                 : assertionOptions.UserVerification.ToEnum<UserVerificationRequirement>();
+
             var options = _fido2.GetAssertionOptions(
                 existingCredentials,
                 uv,
@@ -286,8 +288,8 @@ public class Fido2Controller : Controller
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
             sessionJson["gradian.delegationSecret"] = options.ToJson();
             // 4. Temporarily store options, session/in-memory cache/redis/db
-            var hashedChallenge = Digester.Digest(options.Challenge);
-            options.Challenge = hashedChallenge;
+            //var hashedChallenge = Digester.Digest(options.Challenge);
+            //options.Challenge = hashedChallenge;
             sessionJson["fido2.assertionOptions"] = options.ToJson();
 
             string sessionJsonString = _db.CreateJsonFromDictionary(sessionJson);
@@ -296,11 +298,12 @@ public class Fido2Controller : Controller
             //var transParams = await _algodApi.TransactionParamsAsync();
 
             // 5. Return options to client
-            return new AssertionOptionsResponse() { FidoAssertionOptions = options, CurrentRound = 0};
+            return new AssertionOptionsResponse() { FidoAssertionOptions = options, CurrentRound = 0 };
         }
         catch (Exception e)
         {
-            return new AssertionOptionsResponse() { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
+            return new AssertionOptionsResponse()
+                { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
         }
     }
 
