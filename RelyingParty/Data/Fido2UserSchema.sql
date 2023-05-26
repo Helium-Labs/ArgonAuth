@@ -25,3 +25,12 @@ CREATE TABLE `credentials` (
     UNIQUE KEY `credential_id` (`credential_id`),
     UNIQUE KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Table for storing DIDT data
+CREATE TABLE `DIDT` (
+    `id` INT(11) NOT NULL AUTO_INCREMENT,
+    `user_id` VARBINARY(255) NOT NULL,
+    `public_key` BLOB NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

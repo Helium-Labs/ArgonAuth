@@ -302,7 +302,7 @@ public class PlanetScaleDatabase
         return credentials;
     }
 
-    public async void UpdateCounter(byte[] credentialId, uint counter)
+    public async Task UpdateCounter(byte[] credentialId, uint counter)
     {
         var conn = await GetMySqlConnection();
 
@@ -310,6 +310,21 @@ public class PlanetScaleDatabase
         {
             cmd.Parameters.AddWithValue("@counter", counter);
             cmd.Parameters.AddWithValue("@credential_id", credentialId);
+            cmd.ExecuteNonQuery();
+        }
+    }
+    
+    // update the table didt, with the new value of the DIDT public key.
+    // If there is an existing value, it will be overwritten. Where user_id is the user's ID,
+    // and didt is the DIDT public key. Key is the user_id.
+    public async Task UpsertDidtPublicKey(byte[] user_id, byte[] didt)
+    {
+        var conn = await GetMySqlConnection();
+
+        using (var cmd = new MySqlCommand("INSERT INTO DIDT (user_id, public_key) VALUES (@user_id, @didt) ON DUPLICATE KEY UPDATE public_key = @didt", conn))
+        {
+            cmd.Parameters.AddWithValue("@user_id", user_id);
+            cmd.Parameters.AddWithValue("@didt", didt);
             cmd.ExecuteNonQuery();
         }
     }

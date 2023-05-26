@@ -236,8 +236,6 @@ public class Fido2Controller : Controller
     /// 
     /// TODO - Assuming this is going to be a centralised service for game developers, the particular master account, 
     /// the particular initial funding MBR and assets, would want to come from a config depending on the route.
-    /// 
-    /// 
     /// </summary>
     private async Task preFundLsig(LogicsigSignature lsigCompiled)
     {
@@ -262,7 +260,11 @@ public class Fido2Controller : Controller
     [HttpPost]
     [Route("/assertionOptions")]
     public async Task<AssertionOptionsResponse> AssertionOptionsPost(
-        [FromBody] AssertionOptionsPostModel assertionOptions)
+        [FromBody] AssertionOptionsPostModel assertionOptions,
+        string didtPubKeyAsBase64,
+        string roundStartAsUINT64BEBase64,
+        string roundEndAsUINT64BEBase64
+    )
     {
         try
         {
@@ -294,6 +296,14 @@ public class Fido2Controller : Controller
                 uv,
                 exts
             );
+
+            // pre-pend didtPubKeyAsBase64 to allow for the DIDT to be used as a key.
+            byte[] didtPubKey = Convert.FromBase64String(didtPubKeyAsBase64);
+            // create the actual DIDT token, as packed binary: didtPubKey + roundStart + roundEnd (32 + 8 + 8 = 48 bytes)
+            byte[] didt = didtPubKey
+                .Concat(Convert.FromBase64String(roundStartAsUINT64BEBase64))
+                .Concat(Convert.FromBase64String(roundEndAsUINT64BEBase64)).ToArray();
+            options.Challenge = didt.Concat(options.Challenge).ToArray();
 
             // DEMO: Replace the Challenge with a hashed Challenge
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
@@ -332,9 +342,11 @@ public class Fido2Controller : Controller
 
     [HttpPost]
     [Route("/makeAssertionAndDelegateAccess")]
-    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess(string username,
-        [FromBody] AuthenticatorAssertionRawResponse clientResponse, ulong roundStart, ulong roundEnd,
-        CancellationToken cancellationToken)
+    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess(
+        [FromBody] AuthenticatorAssertionRawResponse clientResponse,
+        string username,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -375,17 +387,24 @@ public class Fido2Controller : Controller
             };
 
             // 5. Make the assertion
-
             // DEMO : modify the challenge to contain the bigendian concatenation of roundstart and roundend
             //options.Challenge = options.Challenge.Concat(ulongToBigEndianBytes(roundStart))
             //    .Concat(ulongToBigEndianBytes(roundEnd)).ToArray();
-
             var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback,
                 cancellationToken: cancellationToken);
 
-            // 6. Store the updated counter
-            _db.UpdateCounter(res.CredentialId, res.Counter);
+            // extract the challenge and record it as their session token for access delegation.
+            // Expiration dictated by challenge encoded DIDT token.
+            byte[] didt = options.Challenge.Take(48).ToArray();
+            byte[] didtPubKey = didt.Take(32).ToArray();
+            // roundStart and roundEnd are 8 bytes each
+            byte[] didtRoundStart = didt.Skip(32).Take(8).ToArray();
+            byte[] didtRoundEnd = didt.Skip(40).Take(8).ToArray();
+            // @todo store the entire DIDT token in the database, and use it to verify the signature. Keeping it simple for now.
+            await _db.UpsertDidtPublicKey(clientResponse.Response.UserHandle, didtPubKey);
 
+            // 6. Store the updated counter
+            await _db.UpdateCounter(res.CredentialId, res.Counter);
 
             // DEMO: now let's test the lsig to prove that delegation worked (or not)
             /*
