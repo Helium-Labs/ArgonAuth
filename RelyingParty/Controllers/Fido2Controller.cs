@@ -65,7 +65,7 @@ public class Fido2Controller : Controller
         try
         {
             var user = await _db.GetUser(username);
-            return user != null;
+            return user == null;
         }
         catch (Exception e)
         {
