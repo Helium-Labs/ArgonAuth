@@ -16,6 +16,7 @@ using Algorand.Algod.Model;
 using Algorand;
 using Algorand.Algod.Model.Transactions;
 using Algorand.Utils;
+using Microsoft.Extensions.Logging;
 
 namespace Fido2Demo;
 
@@ -36,8 +37,10 @@ public class Fido2Controller : Controller
     private static Account account2;
     private static Account account3;
 
+    private readonly ILogger _logger;
 
-    public Fido2Controller(IFido2 fido2, IMasterAccount serverAccount, IDefaultApi algod, IApi kmdApi,
+    public Fido2Controller(ILogger<Fido2Controller> logger, IFido2 fido2, IMasterAccount serverAccount,
+        IDefaultApi algod, IApi kmdApi,
         PlanetScaleDatabase database)
     {
         _algodApi = algod;
@@ -45,12 +48,29 @@ public class Fido2Controller : Controller
         _serverAccount = serverAccount;
         _db = database;
         _kmdApi = (Api)kmdApi;
+        _logger = logger;
     }
 
     private string FormatException(Exception e)
     {
         return string.Format("{0}{1}", e.Message,
             e.InnerException != null ? " (" + e.InnerException.Message + ")" : "");
+    }
+
+    // HttpPost to check if username is already registered, returning a bool. Input is just a string username in the body.
+    [HttpPost]
+    [Route("/usernameIsAvailable")]
+    public async Task<bool> UsernameIsAvailable([FromBody] string username)
+    {
+        try
+        {
+            var user = await _db.GetUser(username);
+            return user != null;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
     }
 
     [HttpPost]
@@ -139,7 +159,6 @@ public class Fido2Controller : Controller
 
             var options = CredentialCreateOptions.FromJson(jsonOptions);
 
-
             // 2. Create callback so that lib can verify credential id is unique to this user
             IsCredentialIdUniqueToUserAsyncDelegate callback = static async (args, cancellationToken) =>
             {
@@ -168,7 +187,7 @@ public class Fido2Controller : Controller
                 SignatureCounter = success.Result.Counter,
                 CredType = success.Result.CredType,
                 RegDate = DateTime.UtcNow,
-                //     AaGuid = success.Result.Aaguid
+                AaGuid = success.Result.Aaguid
             });
 
             // Remove Certificates from success because System.Text.Json cannot serialize them properly. See https://github.com/passwordless-lib/fido2-net-lib/issues/328
@@ -202,6 +221,7 @@ public class Fido2Controller : Controller
         }
         catch (Exception e)
         {
+            _logger.LogError("Failed to make credential: {Exception}", e);
             return new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult =
@@ -223,7 +243,6 @@ public class Fido2Controller : Controller
     {
         //DEMO CODE
         //  Just assume Sandbox here and chuck some funds at the lsig
-
         var transParams = await _algodApi.TransactionParamsAsync();
         var payment = PaymentTransaction.GetPaymentTransactionFromNetworkTransactionParameters(account1.Address,
             lsigCompiled.Address, 1000000, "", transParams);
@@ -260,12 +279,6 @@ public class Fido2Controller : Controller
             var cred = await _db.GetCredentialsByUser(user);
             existingCredentials = cred.Select(c => c.Descriptor).ToList();
 
-            //TODO verify PK and change db schema
-            foreach (var c in existingCredentials)
-            {
-                c.Id = c.Id.Take(32).ToArray();
-            }
-
             var exts = new AuthenticationExtensionsClientInputs()
             {
                 UserVerificationMethod = true
@@ -300,6 +313,7 @@ public class Fido2Controller : Controller
         }
         catch (Exception e)
         {
+            _logger.LogError("Failed to make credential: {Exception}", e);
             return new AssertionOptionsResponse()
                 { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
         }
@@ -324,7 +338,6 @@ public class Fido2Controller : Controller
     {
         try
         {
-            // clientResponse.Id
             // 1. Get the assertion options we sent the client
             string? jsonKVStore = await _db.GetUserJsonMetadata(username);
             if (jsonKVStore == null)
@@ -364,8 +377,9 @@ public class Fido2Controller : Controller
             // 5. Make the assertion
 
             // DEMO : modify the challenge to contain the bigendian concatenation of roundstart and roundend
-            options.Challenge = options.Challenge.Concat(ulongToBigEndianBytes(roundStart))
-                .Concat(ulongToBigEndianBytes(roundEnd)).ToArray();
+            //options.Challenge = options.Challenge.Concat(ulongToBigEndianBytes(roundStart))
+            //    .Concat(ulongToBigEndianBytes(roundEnd)).ToArray();
+
             var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback,
                 cancellationToken: cancellationToken);
 

@@ -3,7 +3,7 @@ CREATE TABLE `users` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `username` VARCHAR(255) NOT NULL,
     `display_name` VARCHAR(255) NOT NULL,
-    `user_id` BINARY(16) NOT NULL,
+    `user_id` VARBINARY(255) NOT NULL,
     `json_metadata` VARCHAR(2048), 
     PRIMARY KEY (`id`),
     UNIQUE KEY `user_id` (`user_id`),
@@ -14,9 +14,9 @@ CREATE TABLE `users` (
 -- Table storing FIDO2 credential data
 CREATE TABLE `credentials` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `credential_id` BINARY(255) NOT NULL,
+    `credential_id` VARBINARY(255) NOT NULL,
     `public_key` BLOB NOT NULL,
-    `user_id` BINARY(16) NOT NULL,
+    `user_id` VARBINARY(255) NOT NULL,
     `signature_counter` INT(10) UNSIGNED NOT NULL,
     `cred_type` VARCHAR(255) NOT NULL,
     `reg_date` DATETIME NOT NULL,
