@@ -142,9 +142,6 @@ public class Startup
                 using var reader = new StreamReader(context.Request.Body);
                 string requestBody = await reader.ReadToEndAsync();
 
-                // If you want to parse the JSON into an object, you can use:
-                // var jsonObject = JsonConvert.DeserializeObject(requestBody);
-
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(requestBody);
             });
