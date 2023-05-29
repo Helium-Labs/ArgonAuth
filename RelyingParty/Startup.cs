@@ -62,7 +62,9 @@ public class Startup
         services.AddSingleton(new PlanetScaleDatabase(connectionString));
 
         //Algod
-        services.AddSingleton<IDefaultApi>(SetUpAlgodConnection());
+        string host = Configuration["AlgodHTTPApi:host"];
+        string token = Configuration["AlgodHTTPApi:token"];
+        services.AddSingleton<IDefaultApi>(SetUpAlgodConnection(host, token));
         services.AddSingleton<IApi>(SetupKmdApi());
         
         services.AddFido2(options =>
@@ -90,13 +92,11 @@ public class Startup
 
     }
 
-
-    private  DefaultApi SetUpAlgodConnection()
+    private  DefaultApi SetUpAlgodConnection(string host, string token)
     {
         //A standard sandbox connection
-        var httpClient = HttpClientConfigurator.ConfigureHttpClient(@"http://localhost:4001", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        var httpClient = HttpClientConfigurator.ConfigureHttpClient(@host, token);
         var algodApiInstance = new DefaultApi(httpClient);
-
         return algodApiInstance;
     }
 

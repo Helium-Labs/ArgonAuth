@@ -72,6 +72,15 @@ public class Fido2Controller : Controller
             return false;
         }
     }
+    
+    // Get request, with no parameters, that returns the current round.
+    [HttpGet]
+    [Route("/getLastRound")]
+    public async Task<ulong> GetRound()
+    {
+        var status = await _algodApi.GetStatusAsync();
+        return status.LastRound;
+    }
 
     [HttpPost]
     [Route("/makeCredentialOptions")]
