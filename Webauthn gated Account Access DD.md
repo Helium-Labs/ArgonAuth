@@ -204,17 +204,20 @@ global state:
 - funder: address that funds this application
 
 InnerTxn NoOp Functions:
-- payment(to, amt)
-- transfer(asaID, to, amt)
+- payment(amt, to)
+- transfer(amt, asaID, to)
 - appCall(appId, OnComplete, AppArgs)
-- composer(composes the above - somehow!)
+- composer(composes the above)
  
 Auxiliary NoOp Functions:
 - OptIn(asaID)
 ```
 
 The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction, whose purpose is to cover the fees across all transactions (the invoker, other tx in the group, and so forth).
+`composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`.
 
 Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
-- https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx/?from_query=Inner
+- https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx
+- https://github.com/FrankSzendzielarz/AlgorandVisualStudio/blob/main/Transactions/InnerTransactions.md
+
