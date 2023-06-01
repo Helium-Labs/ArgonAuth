@@ -135,6 +135,11 @@ The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction
 `composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`. Making it as flexible as a regular account, except for Oracle data which appears to be difficult to include (unless it's just a signed payload).
 The InnerTxn certify the sender of the NoOp application call is the `owner` that's recorded in the global state.
 
+### Cost Analysis
+
+- Fee pooling would cost at least 3 x MinTXFee. To cover itself, the lsig initiating owner call, and the inner txn itself. Ideally have all purchase type TX cover its fee, pushed back onto the user.
+- MBR is reclaimable, except for the MBR to create the escrow smart contract. An initial MBR of 0.1A to create the escrow smart contract is needed. If the LSIG creates the escrow SC, it doesn't need an additional 0.1A to Opt-In.
+
 Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
 - https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx
