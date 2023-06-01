@@ -44,7 +44,7 @@ Sources:
 ### With CS
 ```csharp
 // make the unsigned tx
-PaymentTransaction transaction = new PaymentTransaction()
+PaymentTransaction transaction = new PaymentTransaction() 
 {
     Fee=fee,
     FirstValid = fv,
@@ -60,7 +60,8 @@ PaymentTransaction transaction = new PaymentTransaction()
 // create an MSIG with which we'll sign it
 var version = 1;
 var threshold = 2;
-MultisigSignature mSig = new MultisigSignature(version, threshold);               //create a new multisignature like the current 'from'
+MultisigSignature mSig = new MultisigSignature(version, threshold);
+
 // add subsigs (at least threshold count worth)
 // sign with the account
 Account signingAccount = //... init
@@ -72,7 +73,7 @@ SignedTransaction lsigTxSig = transaction.sign(lsig);
 mSig.Subsigs.Add(new MultisigSubsig(lsig.Address, lsigTxSig));
 
 // sign original tx with the msig we just created. NOTE: there's no transaction.sign(msig) :(
-SignedTransaction msigTxSig = new SignedTransaction(this, null,mSig,null,null);
+SignedTransaction msigTxSig = new SignedTransaction(transaction, null, mSig, null, null);
 // submit...
 ```
 
