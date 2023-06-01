@@ -8,10 +8,10 @@ A contract account that approves any TX from the account if a valid DIDT and Web
 
 ```
 immutable state:
- - secp256r1 public key for the authenticator
+ - PK_auth
 
 assert(DIDT hasn't expired)
-assert(DIDT signed with secp256r1 public key)
+assert(DIDT signed with PK_auth)
 assert(DIDT contains PK_sess)
 assert(TX hash signed with PK_sess)
 assert(lease)
@@ -21,6 +21,7 @@ assert(default checks)
 Where:
 - `DIDT`: decentralzied identity token, explained below.
 - `PK_sess`: Ephermeral X25519 Ephemereal Session Access Token Public key, explained below.
+- `PK_auth`: ES256 (secp256r1) public key for the authenticator
 
 ### DIDT Spec
 
