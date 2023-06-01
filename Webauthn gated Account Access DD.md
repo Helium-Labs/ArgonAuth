@@ -214,7 +214,7 @@ Auxiliary NoOp Functions:
 ```
 
 The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction, whose purpose is to cover the fees across all transactions (the invoker, other tx in the group, and so forth).
-`composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`.
+`composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`. Making it as flexible as a regular account, except for Oracle data which appears to be difficult to include (unless it's just a signed payload).
 
 Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
