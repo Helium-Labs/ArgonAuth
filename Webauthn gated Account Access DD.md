@@ -204,12 +204,12 @@ global state:
 - funder: address that funds this application
 
 InnerTxn NoOp Functions:
-payment(to, amt)
-transfer(asaID, amt)
-appCall(appId, OnComplete, AppArgs)
+- payment(to, amt)
+- transfer(asaID, amt)
+- appCall(appId, OnComplete, AppArgs)
 
 Auxiliary NoOp Functions:
-OptIn(asaID)
+- OptIn(asaID)
 ```
 
 The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction, whose purpose is to cover the fees across all transactions (the invoker, other tx in the group, and so forth).
