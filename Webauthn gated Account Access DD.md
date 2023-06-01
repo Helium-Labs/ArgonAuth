@@ -1,14 +1,13 @@
 # Research, Development & Due-Diligence around Account Access gated by Webauthn 
 
-## LSIG Escrow Account with Access Gated by Webauthn
+## LSIG Contract Account with Access Gated by Webauthn
 
-The LSIG spec is summarized as follows. It's a special type of Escrow contract account that has no MBR, and no opt-in. The goal is to make it frictionless in terms of thinking about OptIn and MBR.
-This is great because those things are irritating to deal with during a gaming session -- you want to focus on the game.
+A contract account that approves any TX from the account if a valid DIDT and Webauthn is provided.
 
+### Spec
 
 ```
 immutable state:
- - list of pre-approved addresses
  - secp256r1 public key for the authenticator
 
 assert(DIDT hasn't expired)
@@ -17,20 +16,8 @@ assert(DIDT contains PK_sess)
 assert(TX hash signed with PK_sess)
 assert(lease)
 assert(default checks)
-1. allow GTXN: (1) cover MBR, & (2) opt-in from a pre-approved address.
-2. allow GTXN: (1) opt-out from a pre-approved address if balance is 0, & (2) reclaim 1 MBR
-3. allow receipt of any Opted-In ASA
-4. allow applciation call to application created by a pre-approved address
-5. allow any axfer or pay to any address
-6. allow a rekey to another account
 ```
 
-TLDR: It's basically just a regular account that has some logic around opt-in/opt-out for silent handling of MBR and OptIn, so that only the pre-approved addresses can reclaim the MBR.
-
-Questions:
-Is (4) possible, given an LSIG is stateless?
-NO.
-It may be easier to have the LSIG as a bare-bones regular account, that gates access to a stateful SC that handles MBR, OptIn and fee logic.
 
 ## Signature Mode 
 
