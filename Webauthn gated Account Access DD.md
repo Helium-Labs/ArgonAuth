@@ -21,7 +21,7 @@ assert(default checks)
 Where:
 - `DIDT`: decentralzied identity token, explained below.
 - `PK_sess`: Ephermeral X25519 Ephemereal Session Access Token Public key, explained below.
-- `PK_auth`: ES256 (secp256r1) public key for the authenticator
+- `PK_auth`: ES256 (secp256r1) credential public key for the credential, unique to the particular RP & chosen user handle.
 
 ### DIDT Spec
 
@@ -66,6 +66,10 @@ As strong as the Webauthn flow, where the only way to compromise the security is
 ### Security Improvements
 
 Supplying a server generated signature of a hash of the DIDT, so you can certify that the challenge successfully passed the Webauthn assertion according to the servers perspective. Otherwise during AssertionOptions, just before it's sent off for Assertion, a fake DIDT can be delivered. Crucially `DIDT client validation` prevents most MITM including injection of a fake DIDT into the AssertionOptions response, so this improvement isn't necessary.
+
+Sources:
+- https://www.w3.org/TR/webauthn-2/#public-key-credential-source
+- https://www.w3.org/TR/webauthn-2/#credential-public-key
 
 ## Signature Mode 
 
