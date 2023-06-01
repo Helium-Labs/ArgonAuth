@@ -4,7 +4,7 @@
 
 A contract account that approves any TX from the account if a valid DIDT and Webauthn is provided.
 
-### LSIG Spec
+### LSIG Contract Account Spec
 
 ```
 immutable state:
@@ -188,3 +188,20 @@ Sources:
 - https://frankszendzielarz.github.io/dotnet-algorand-sdk/api/Algorand.MultisigSignature.html
 - https://frankszendzielarz.github.io/dotnet-algorand-sdk/api/Algorand.MultisigSubsig.html
 - https://frankszendzielarz.github.io/dotnet-algorand-sdk/api/Algorand.LogicsigSignature.html
+
+## Smart Contract specifically for a frictionless game wallet experience
+
+Features:
+- Covers Opt-In/MBR (web2 logic ensures it is frictionless) for assets & applications created by a list of pre-approved creators. MBR is reclaimable.
+- Fees that are not covered via pooling are covered by the application. Done by including a "fee pooler" transaction in the group transaction to a global fee pooler smart contract.
+- Seamlessly handles all common TX such as pay, axfer, app call, ..., as if it were a regular account. The fact it is an application should have no hinderance on what's possible.
+
+### Smart Contract Spec
+```
+@todo
+```
+
+Sources:
+- https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
+
+
