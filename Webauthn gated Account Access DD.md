@@ -205,9 +205,10 @@ global state:
 
 InnerTxn NoOp Functions:
 - payment(to, amt)
-- transfer(asaID, amt)
+- transfer(asaID, to, amt)
 - appCall(appId, OnComplete, AppArgs)
-
+- composer(composes the above - somehow!)
+ 
 Auxiliary NoOp Functions:
 - OptIn(asaID)
 ```
