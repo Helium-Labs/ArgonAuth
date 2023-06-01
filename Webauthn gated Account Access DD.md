@@ -65,7 +65,7 @@ As strong as the Webauthn flow, where the only way to compromise the security is
 
 ### Security Improvements
 
-Supplying a server generated signature of a hash of the DIDT, so you can certify that the challenge successfully passed the Webauthn assertion according to the servers perspective. Otherwise during AssertionOptions, just before it's sent off for Assertion, a fake DIDT can be delivered. Crucially `DIDT client validation` prevents most MITM including injection of a fake DIDT into their, so this improvement isn't necessary.
+Supplying a server generated signature of a hash of the DIDT, so you can certify that the challenge successfully passed the Webauthn assertion according to the servers perspective. Otherwise during AssertionOptions, just before it's sent off for Assertion, a fake DIDT can be delivered. Crucially `DIDT client validation` prevents most MITM including injection of a fake DIDT into the AssertionOptions response, so this improvement isn't necessary.
 
 ## Signature Mode 
 
