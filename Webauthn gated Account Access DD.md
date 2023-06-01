@@ -3,6 +3,7 @@
 
 
 ## Rekeying a smart-signature to a multi-sig account
+Relevant when wanting to add another factor of authenticator to signing requests. Ideally want a way to only require signing by the second factor for certain kinds of TX.
 Rekeying a Smart-Signature, and accounts more generally, to include a second factor of authentication (another key):
 
 ### With Javascript
