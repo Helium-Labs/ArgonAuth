@@ -32,6 +32,10 @@ If the SHA512_256 hash of the program (prefixed by "Program") is equal to author
 
 If the account has signed the program (by providing a valid ed25519 signature or valid multisignature for the authorizer address on the string "Program" concatenated with the program bytecode) then: if the program returns true the transaction is authorized as if the account had signed it. This allows an account to hand out a signed program so that other users can carry out delegated actions which are approved by the program. Note that Smart Signature Args are not signed.
 
+### Important considerations
+
+- The arguments are transparent to the world. Therefore never put sensitive access tokens or keys in the arguments.
+
 Sources: 
 - https://developer.algorand.org/docs/get-details/dapps/avm/teal/specification/#execution-environment-for-smart-signatures
 
