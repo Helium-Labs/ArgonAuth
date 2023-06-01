@@ -1,6 +1,8 @@
 # Research, Development & Due-Diligence around Account Access gated by Webauthn 
 
-## LSIG Contract Account with Access Gated by Webauthn
+In layman terms, the proposal is to create an LSIG contract in the generic case which acts as an account with access gated by Webauthn (see *Section 1*). Then in *Section 2*, a high-level spec for a stateful escrow account is described that covers MBR and fees through a funder application.
+
+## 1. LSIG Contract Account with Access Gated by Webauthn
 
 A contract account that approves any TX from the account if a valid DIDT and Webauthn is provided.
 
@@ -105,7 +107,42 @@ Sources:
 - https://developer.algorand.org/docs/get-details/dapps/avm/teal/specification/#execution-environment-for-smart-signatures
 
 
-## Rekeying a smart-signature to a multi-sig account for MFA delegated lsig access 
+## 2. Smart Contract specifically for a frictionless game wallet experience
+
+Features:
+- Covers Opt-In/MBR for assets & applications created by a list of pre-approved creators. MBR is reclaimable by the "global funder" application. Only this funder application can close out assets and opt-out of applications.
+- Fees that are not covered via pooling are covered by the application. Done by including a "fee pooler" transaction in the group transaction to a "global funder" smart contract.
+- Seamlessly handles all common TX such as pay, axfer, app call, ..., as if it were a regular account.
+- Inner Transactions: since AVM 6, TEAL allows Inner Transactions with no limitations except for: stack depth of 8 for contract-contract calls, called contracts must also be AVM 6, & there's a max inner group transaction size of 256.
+
+### Smart Contract Spec
+```
+global state:
+- owner: address that owns this application
+- funder: address that funds this application
+
+InnerTxn NoOp Functions:
+- payment(amt, to)
+- transfer(amt, asaID, to)
+- appCall(appId, OnComplete, AppArgs)
+- composer(composes the above)
+ 
+Auxiliary NoOp Functions:
+- OptIn(asaID)
+```
+
+The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction, whose purpose is to cover the fees across all transactions (the invoker, other tx in the group, and so forth).
+`composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`. Making it as flexible as a regular account, except for Oracle data which appears to be difficult to include (unless it's just a signed payload).
+
+Sources:
+- https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
+- https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx
+- https://github.com/FrankSzendzielarz/AlgorandVisualStudio/blob/main/Transactions/InnerTransactions.md
+
+
+
+
+## 3. Rekeying a smart-signature to a multi-sig account for MFA delegated lsig access 
 
 Relevant when wanting to add another factor of authenticator to signing requests. Ideally want a way to only require signing by the second factor for certain kinds of TX.
 Rekeying a Smart-Signature, and accounts more generally, to include a second factor of authentication (another key):
@@ -188,36 +225,4 @@ Sources:
 - https://frankszendzielarz.github.io/dotnet-algorand-sdk/api/Algorand.MultisigSignature.html
 - https://frankszendzielarz.github.io/dotnet-algorand-sdk/api/Algorand.MultisigSubsig.html
 - https://frankszendzielarz.github.io/dotnet-algorand-sdk/api/Algorand.LogicsigSignature.html
-
-## Smart Contract specifically for a frictionless game wallet experience
-
-Features:
-- Covers Opt-In/MBR for assets & applications created by a list of pre-approved creators. MBR is reclaimable by the "global funder" application. Only this funder application can close out assets and opt-out of applications.
-- Fees that are not covered via pooling are covered by the application. Done by including a "fee pooler" transaction in the group transaction to a "global funder" smart contract.
-- Seamlessly handles all common TX such as pay, axfer, app call, ..., as if it were a regular account.
-- Inner Transactions: since AVM 6, TEAL allows Inner Transactions with no limitations except for: stack depth of 8 for contract-contract calls, called contracts must also be AVM 6, & there's a max inner group transaction size of 256.
-
-### Smart Contract Spec
-```
-global state:
-- owner: address that owns this application
-- funder: address that funds this application
-
-InnerTxn NoOp Functions:
-- payment(amt, to)
-- transfer(amt, asaID, to)
-- appCall(appId, OnComplete, AppArgs)
-- composer(composes the above)
- 
-Auxiliary NoOp Functions:
-- OptIn(asaID)
-```
-
-The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction, whose purpose is to cover the fees across all transactions (the invoker, other tx in the group, and so forth).
-`composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`. Making it as flexible as a regular account, except for Oracle data which appears to be difficult to include (unless it's just a signed payload).
-
-Sources:
-- https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
-- https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx
-- https://github.com/FrankSzendzielarz/AlgorandVisualStudio/blob/main/Transactions/InnerTransactions.md
 
