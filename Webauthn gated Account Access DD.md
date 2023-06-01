@@ -192,16 +192,28 @@ Sources:
 ## Smart Contract specifically for a frictionless game wallet experience
 
 Features:
-- Covers Opt-In/MBR (web2 logic ensures it is frictionless) for assets & applications created by a list of pre-approved creators. MBR is reclaimable.
-- Fees that are not covered via pooling are covered by the application. Done by including a "fee pooler" transaction in the group transaction to a global fee pooler smart contract.
-- Seamlessly handles all common TX such as pay, axfer, app call, ..., as if it were a regular account. The fact it is an application should have no hinderance on what's possible.
+- Covers Opt-In/MBR for assets & applications created by a list of pre-approved creators. MBR is reclaimable by the "global funder" application. Only this funder application can close out assets and opt-out of applications.
+- Fees that are not covered via pooling are covered by the application. Done by including a "fee pooler" transaction in the group transaction to a "global funder" smart contract.
+- Seamlessly handles all common TX such as pay, axfer, app call, ..., as if it were a regular account.
+- Inner Transactions: since AVM 6, TEAL allows Inner Transactions with no limitations except for: stack depth of 8 for contract-contract calls, called contracts must also be AVM 6, & there's a max inner group transaction size of 256.
 
 ### Smart Contract Spec
 ```
-@todo
+global state:
+- owner: address that owns this application
+- funder: address that funds this application
+
+InnerTxn NoOp Functions:
+payment(to, amt)
+transfer(asaID, amt)
+appCall(appId, OnComplete, AppArgs)
+
+Auxiliary NoOp Functions:
+OptIn(asaID)
 ```
+
+The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction, whose purpose is to cover the fees across all transactions (the invoker, other tx in the group, and so forth).
 
 Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
-
-
+- https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx/?from_query=Inner
