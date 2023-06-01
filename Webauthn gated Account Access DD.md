@@ -107,7 +107,7 @@ Sources:
 - https://developer.algorand.org/docs/get-details/dapps/avm/teal/specification/#execution-environment-for-smart-signatures
 
 
-## 2. Smart Contract specifically for a frictionless game wallet experience
+## 2. Smart Contract specifically for a frictionless experience
 
 Features:
 - Covers Opt-In/MBR for assets & applications created by a list of pre-approved creators. MBR is reclaimable by the "global funder" application. Only this funder application can close out assets and opt-out of applications.
@@ -133,6 +133,7 @@ Auxiliary NoOp Functions:
 
 The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction, whose purpose is to cover the fees across all transactions (the invoker, other tx in the group, and so forth).
 `composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`. Making it as flexible as a regular account, except for Oracle data which appears to be difficult to include (unless it's just a signed payload).
+The InnerTxn certify the sender of the NoOp application call is the `owner` that's recorded in the global state.
 
 Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
