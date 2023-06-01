@@ -29,10 +29,27 @@ TLDR: It's basically just a regular account that has some logic around opt-in/op
 
 Questions:
 Is (4) possible, given an LSIG is stateless?
-
+NO.
 It may be easier to have the LSIG as a bare-bones regular account, that gates access to a stateful SC that handles MBR, OptIn and fee logic.
 
-## Rekeying a smart-signature to a multi-sig account
+## Signature Mode 
+
+Logic signatures (lsigs) in Algorand refer to programs that execute in a constrained environment. These programs are stateless and are essentially digital signatures with embedded logic. They have no direct access to the majority of the blockchain state, except for the transaction they're validating and a small selection of global properties.
+
+### Contract Account
+
+If the SHA512_256 hash of the program (prefixed by "Program") is equal to authorizer address of the transaction sender then this is a contract account wholly controlled by the program. No other signature is necessary or possible. The only way to execute a transaction against the contract account is for the program to approve it.
+*Meaning you can't use a multisignature to add another layer of security to a contract account*.
+
+### Delegated Access
+
+If the account has signed the program (by providing a valid ed25519 signature or valid multisignature for the authorizer address on the string "Program" concatenated with the program bytecode) then: if the program returns true the transaction is authorized as if the account had signed it. This allows an account to hand out a signed program so that other users can carry out delegated actions which are approved by the program. Note that Smart Signature Args are not signed.
+
+Sources: 
+- https://developer.algorand.org/docs/get-details/dapps/avm/teal/specification/#execution-environment-for-smart-signatures
+
+
+## Rekeying a smart-signature to a multi-sig account for MFA delegated lsig access 
 
 Relevant when wanting to add another factor of authenticator to signing requests. Ideally want a way to only require signing by the second factor for certain kinds of TX.
 Rekeying a Smart-Signature, and accounts more generally, to include a second factor of authentication (another key):
