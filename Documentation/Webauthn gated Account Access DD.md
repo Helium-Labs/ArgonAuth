@@ -145,7 +145,9 @@ Sources:
 
 ## Key Management
 
-- `sess` stored in **WebCrypto indexed DB** in the given Window thread for the lifetime the WebApp is open. For supported key pairs like ES256, it can be created with a non-exportable private key. It offers slightly more protection than a global variable for non-exportable keys, due to built-in XSS mitigation measures. 
+Wallet keys and even Web2 resource authentication keys are stored entirely client side, and are self-custodial in the sense players retain full ownership of keys where their actions dictate the keys management (therefore they have control).
+
+- `sess` stored in **WebCrypto Indexed DB** in the given Window thread for the lifetime the WebApp is open. For supported key pairs like ES256, it can be created with a non-exportable private key. It offers slightly more protection than a global variable for non-exportable keys, due to built-in XSS mitigation measures. 
 - `sess` is further secured inside a **sandboxed iframe**, with heavily restricted permissions. Communication over the iframe happens across a barrier with JSON RPC method standardized message passing.
 - A HTTP **CSP** (Content Security Policy) is in place to restrict the origin of scripts and images to a whitelist of origins, done to mitigate XSS (cross-site scripting).
 
@@ -185,6 +187,7 @@ Features:
 - Fees that are not covered via pooling are covered by the application. Done by including a "fee pooler" transaction in the group transaction to a "global funder" smart contract.
 - Seamlessly handles all common TX such as pay, axfer, app call, ..., as if it were a regular account.
 - Inner Transactions: since AVM 6, TEAL allows Inner Transactions with no limitations except for: stack depth of 8 for contract-contract calls, called contracts must also be AVM 6, & there's a max inner group transaction size of 256.
+- Limited # of frictionless smart contracts per LSIG account (default is 1).
 
 ### Smart Contract Spec
 ```
@@ -206,6 +209,8 @@ The InnerTxn NoOp Functions are each grouped with a fee pooler group transaction
 `composer` uses a custom ABI datastructure to represent a group of inner transactions that are in terms of the other InnerTxn `payment`, `transfer` and `appCall`. Making it as flexible as a regular account, except for Oracle data which appears to be difficult to include (unless it's just a signed payload).
 The InnerTxn certify the sender of the NoOp application call is the `owner` that's recorded in the global state.
 
+Only the funder can Opt-In the contract, to any asset of their choosing, where they cover the fees.
+
 ### Cost Analysis
 
 - Fee pooling would cost at least 3 x MinTXFee. To cover itself, the lsig initiating owner call, and the inner txn itself. Ideally have all purchase type TX cover its fee, pushed back onto the user. Fees are not reclaimable.
@@ -216,6 +221,17 @@ Sources:
 - https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx
 - https://github.com/FrankSzendzielarz/AlgorandVisualStudio/blob/main/Transactions/InnerTransactions.md
 
+
+### User Story
+
+#### Account Creation
+
+Once users have registered their account, they can create a frictionless smart contract with a separate API call. Devs must handle this flow, which may be handled behind the scenes or explicitly by the user (e.g. multiple WoW characters, with each WoW character having its own frictionless smart contract).
+
+
+#### Off-Ramping
+
+They can off-ramp by returning their assets to the owner account first, and then out to any account from there. This is intentionally done to reduce the attack surface area. It can be done as a single web2 transaction via an API, which will automate the steps.
 
 
 ## 3. Rekeying a smart-signature to a multi-sig account for MFA delegated lsig access 
