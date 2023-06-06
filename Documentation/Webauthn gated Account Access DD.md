@@ -133,7 +133,7 @@ UI/UX: a sign-in button with a username field, and the regular Webauthn flow.
 A player wants to transfer their assets out to a main wallet for long term safe keeping.
 
 1. Authenticate
-2. Authorize transfer request out to their wallet
+2. Authorize transfer request out to another wallet
 
 Sources:
 - https://www.w3.org/TR/webauthn-2
@@ -145,7 +145,7 @@ Sources:
 
 ## Key Management
 
-- `sess` stored **in volatile memory** in the given Window thread for the lifetime the WebApp is open
+- `sess` stored in **WebCrypto indexed DB** in the given Window thread for the lifetime the WebApp is open. For supported key pairs like ES256, it can be created with a non-exportable private key. It offers slightly more protection than a global variable for non-exportable keys, due to built-in XSS mitigation measures. 
 - `sess` is further secured inside a **sandboxed iframe**, with heavily restricted permissions. Communication over the iframe happens across a barrier with JSON RPC method standardized message passing.
 - A HTTP **CSP** (Content Security Policy) is in place to restrict the origin of scripts and images to a whitelist of origins, done to mitigate XSS (cross-site scripting).
 
@@ -154,6 +154,8 @@ Sources:
 - https://discord.com/channels/963742627918905374/1017642572065275954/1106879483828502558
 - https://magic-whitepaper-key-based-authentication-system.s3.us-west-2.amazonaws.com/Magic+Whitepaper.pdf
 - https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+- https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API
+
 
 ## Signature Mode 
 
