@@ -74,13 +74,22 @@ Sources:
 - https://www.w3.org/TR/webauthn-2/#public-key-credential-source
 - https://www.w3.org/TR/webauthn-2/#credential-public-key
 
-## Webauthn Stages
+### Webauthn Ceremony Stages 
 
-### Registration (Account Creation)
+## Registration
 
-```
-1. 
-```
+The Registration Ceremony is no different to that found in FIDO2 as standardized by W3C.
+
+![Webauthn Registration](https://www.w3.org/TR/webauthn-2/images/webauthn-registration-flow-01.svg)
+
+## Authentication
+
+The Authentication Ceremony is a superset of that found in FIDO2 as standardized by W3C, achieving full compliance for user account authentication. They differ in terms of challenge creation, where the client inserts a public key from a keypair created client-side for taking care of authentication for that session, along with Algorand round parameters that dictate its lifetime of access. The server creates a DIDT from this, which includes a server generated random string following a standard FIDO2 Assertion ceremony. On receipt of the DIDT (which is the FIDO2 challenge), the client validates that the parameters match the values provided in the request, guarding against a MITM attack. Upon server verification of the user signed challenge, the LSIG bytecode and sent back to the user along with their DIDT. The LSIG assertion logic takes care of authorizing transactions sent from the contract account, as described above.  
+
+![Webauthn Authentication](
+https://raw.githubusercontent.com/mangoplane/KeychainRelyingParty/main/Documentation/Assertion.png?token=GHSAT0AAAAAACCYIYD2WKQ3UX4WWWQMWXDAZD6YGAQ)
+
+
 
 ### Assertion (Account Authentication)
 
