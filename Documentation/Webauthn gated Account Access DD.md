@@ -69,12 +69,7 @@ As strong as the Webauthn flow, where the only way to compromise the security is
 
 Supplying a server generated signature of a hash of the DIDT, so you can certify that the challenge successfully passed the Webauthn assertion according to the servers perspective. Otherwise during AssertionOptions, just before it's sent off for Assertion, a fake DIDT can be delivered. Crucially `DIDT client validation` prevents most MITM including injection of a fake DIDT into the AssertionOptions response, so this improvement isn't necessary.
 
-Sources:
-- https://www.w3.org/TR/webauthn-2
-- https://www.w3.org/TR/webauthn-2/#public-key-credential-source
-- https://www.w3.org/TR/webauthn-2/#credential-public-key
-
-### Webauthn Ceremony Stages 
+### Webauthn Ceremony Stages
 
 #### Registration
 
@@ -92,17 +87,36 @@ Upon server verification of the user signed challenge, the LSIG bytecode and sen
 
 ![Webauthn Authentication](./Assertion.png)
 
+### KYC & AML Screening (Optional Extra)
+
+At $1.50 per verification, we can offer KYC & AML screening through Sumsub.com for all accounts that are tied to a single user. This by itself would prevent and heavily reduce the prevalence of bot accounts. It's an optional extra for developers that require End-to-End KYC & AML compliance from the moment the account is created. This is required by many jurisdictions when users try to purchase assets using fiat currency.
+
+### Enterprise Attestation
+
+This is the highest grade of attestation offered by Webauthn. It *uniquely identifies each authenticator, based on an attested authenticator serial number*. The standard only allows this information to be granted per RP Id, to reduce cross-site tracking and violation of privacy rights.
+
+### Bot Account & Spam Prevention Measures
+
+**Paid Accounts** Bots can be mitigated by having the first account free, and the remaining accounts require payment of $1. This makes it prohibitively expensive to have large amounts of bots.
+
+**KYC** When this optional extra is enabled, bots are harder to create if each account is KYCed.
+
+**Enterprise Attestation** You can enforce a limit per attested device. Since compliant authenticators are expensive (at least $50), and people tend to own a few at most (e.g. phone and computer), it's difficult to create many spam accounts per user.
+
+
 ### User Story
 
 #### Player onboarding
 
-**Registration**
+A player wants to start playing your game, and is new to crypto. That don't want to mess with Pera Wallet just yet. It's essentially instant, taking around 15 seconds end-to-end.
+
+Registration:
 
 1. Registers account using their authenticator
 
 UI/UX: a sign-up button, and the regular Webauthn flow.
 
-**Authentication**
+Authentication:
 
 1. Redirected to sign-in
 2. Web Client: generates keypair `sess`
@@ -114,7 +128,20 @@ UI/UX: a sign-up button, and the regular Webauthn flow.
 
 UI/UX: a sign-in button with a username field, and the regular Webauthn flow.
 
-#### Player
+#### Player off-ramping
+
+A player wants to transfer their assets out to a main wallet for long term safe keeping.
+
+1. Authenticate
+2. Authorize transfer request out to their wallet
+
+Sources:
+- https://www.w3.org/TR/webauthn-2
+- https://www.w3.org/TR/webauthn-2/#public-key-credential-source
+- https://www.w3.org/TR/webauthn-2/#credential-public-key
+- https://twitter.com/elonmusk/status/1640199090112806912
+- https://sumsub.com/pricing/
+- https://developers.yubico.com/WebAuthn/Concepts/Enterprise_Attestation/
 
 ## Key Management
 
