@@ -90,7 +90,7 @@ The server creates a DIDT from this, which includes a server generated random st
 
 Upon server verification of the user signed challenge, the LSIG bytecode and sent back to the user along with their DIDT. The LSIG assertion logic takes care of authorizing transactions sent from the contract account, as described above.
 
-![Webauthn Authentication](https://raw.githubusercontent.com/mangoplane/KeychainRelyingParty/main/Documentation/Assertion.png?token=GHSAT0AAAAAACCYIYD2WKQ3UX4WWWQMWXDAZD6YGAQ)
+![Webauthn Authentication](./Assertion.png)
 
 
 
