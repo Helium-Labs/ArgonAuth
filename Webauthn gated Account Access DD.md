@@ -74,6 +74,17 @@ Sources:
 - https://www.w3.org/TR/webauthn-2/#public-key-credential-source
 - https://www.w3.org/TR/webauthn-2/#credential-public-key
 
+## Webauthn Stages
+
+### Registration (Account Creation)
+
+```
+1. 
+```
+
+### Assertion (Account Authentication)
+
+
 ## Key Management
 
 - `sess` stored **in volatile memory** in the given Window thread for the lifetime the WebApp is open
@@ -144,7 +155,6 @@ Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
 - https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx
 - https://github.com/FrankSzendzielarz/AlgorandVisualStudio/blob/main/Transactions/InnerTransactions.md
-
 
 
 
