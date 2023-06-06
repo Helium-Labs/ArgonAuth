@@ -76,13 +76,13 @@ Sources:
 
 ### Webauthn Ceremony Stages 
 
-## Registration
+#### Registration
 
 The Registration Ceremony is no different to that found in FIDO2 as standardized by W3C.
 
 ![Webauthn Registration](https://www.w3.org/TR/webauthn-2/images/webauthn-registration-flow-01.svg)
 
-## Authentication
+#### Authentication
 
 The Authentication Ceremony is a superset of that found in FIDO2 as standardized by W3C, achieving full compliance for user account authentication. They differ in terms of challenge creation, where the client inserts a public key from a keypair created client-side for taking care of authentication for that session, along with Algorand round parameters that dictate its lifetime of access.
 
@@ -92,10 +92,29 @@ Upon server verification of the user signed challenge, the LSIG bytecode and sen
 
 ![Webauthn Authentication](./Assertion.png)
 
+### User Story
 
+#### Player onboarding
 
-### Assertion (Account Authentication)
+**Registration**
 
+1. Registers account using their authenticator
+
+UI/UX: a sign-up button, and the regular Webauthn flow.
+
+**Authentication**
+
+1. Redirected to sign-in
+2. Web Client: generates keypair `sess`
+3. Send request to initiate Auth, with parameters `PK_sess`, `RV_start`, `RV_end`. RV parameters are developer defined and not user chosen.
+4. RP: inserts random string to create the DIDT, and responds to the request with the DIDT.
+5. Web Client: validates `PK_sess`, `RV_start`, & `RV_end` are unchanged.
+6. Webauthn: request users authenticator sign the challenge.
+7. RP: validate signed challenge, and check the challenge is untampered. Insert the users DIDT into a database to allow authorized access to resources based on whether the user has signed requests with `SK_sess`, valid for the lifetime prescribed by the DIDT parameters.
+
+UI/UX: a sign-in button with a username field, and the regular Webauthn flow.
+
+#### Player
 
 ## Key Management
 
@@ -160,7 +179,7 @@ The InnerTxn certify the sender of the NoOp application call is the `owner` that
 
 ### Cost Analysis
 
-- Fee pooling would cost at least 3 x MinTXFee. To cover itself, the lsig initiating owner call, and the inner txn itself. Ideally have all purchase type TX cover its fee, pushed back onto the user.
+- Fee pooling would cost at least 3 x MinTXFee. To cover itself, the lsig initiating owner call, and the inner txn itself. Ideally have all purchase type TX cover its fee, pushed back onto the user. Fees are not reclaimable.
 - MBR is reclaimable, except for the MBR to create the escrow smart contract. An initial MBR of 0.1A to create the escrow smart contract is needed. If the LSIG creates the escrow SC, it doesn't need an additional 0.1A to Opt-In.
 
 Sources:
