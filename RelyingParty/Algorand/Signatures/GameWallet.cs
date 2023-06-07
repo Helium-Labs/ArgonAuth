@@ -14,7 +14,6 @@ namespace RelyingParty.Algorand.Signatures
         [SmartSignatureMethod("AssetTransfer")]
         public int ApproveAssetTransfer(
             AssetTransferTransactionReference txn,
-            AssetReference masterKeyAsset,
             byte[] pkSess, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[0]
             ulong rvStart, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[1]
             ulong rvEnd, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[2]
@@ -82,7 +81,6 @@ namespace RelyingParty.Algorand.Signatures
         [SmartSignatureMethod("Payment")]
         public int ApprovePayment(
             PaymentTransactionReference txn,
-            AssetReference masterKeyAsset,
             byte[] pkSess, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[0]
             ulong rvStart, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[1]
             ulong rvEnd, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[2]
@@ -148,9 +146,8 @@ namespace RelyingParty.Algorand.Signatures
         }
 
         [SmartSignatureMethod("AppCall")]
-        public int ApprovePayment(
+        public int ApproveAppCall(
             AppCallTransactionReference txn,
-            AssetReference masterKeyAsset,
             byte[] pkSess, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[0]
             ulong rvStart, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[1]
             ulong rvEnd, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[2]
