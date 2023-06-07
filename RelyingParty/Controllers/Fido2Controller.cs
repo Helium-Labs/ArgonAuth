@@ -311,8 +311,10 @@ public class Fido2Controller : Controller
             // create the actual DIDT token, as packed binary: didtPubKey + roundStart + roundEnd (32 + 8 + 8 = 48 bytes)
             byte[] didt = didtPubKey
                 .Concat(Convert.FromBase64String(roundStartAsUINT64BEBase64))
-                .Concat(Convert.FromBase64String(roundEndAsUINT64BEBase64)).ToArray();
-            options.Challenge = didt.Concat(options.Challenge).ToArray();
+                .Concat(Convert.FromBase64String(roundEndAsUINT64BEBase64))
+                .Concat(options.Challenge)
+                .ToArray();
+            options.Challenge = didt;
 
             // DEMO: Replace the Challenge with a hashed Challenge
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
@@ -404,32 +406,30 @@ public class Fido2Controller : Controller
 
             // extract the challenge and record it as their session token for access delegation.
             // Expiration dictated by challenge encoded DIDT token.
-            byte[] didt = options.Challenge.Take(48).ToArray();
+            byte[] didt = options.Challenge;
             byte[] didtPubKey = didt.Take(32).ToArray();
             // roundStart and roundEnd are 8 bytes each
             byte[] didtRoundStart = didt.Skip(32).Take(8).ToArray();
             byte[] didtRoundEnd = didt.Skip(40).Take(8).ToArray();
-            // @todo store the entire DIDT token in the database, and use it to verify the signature. Keeping it simple for now.
-            await _db.UpsertDidtPublicKey(clientResponse.Response.UserHandle, didtPubKey);
+            await _db.UpsertDidtPublicKey(clientResponse.Response.UserHandle, didt);
 
             // 6. Store the updated counter
             await _db.UpdateCounter(res.CredentialId, res.Counter);
 
             // DEMO: now let's test the lsig to prove that delegation worked (or not)
-            /*
-            var origOptions = AssertionOptions.FromJson(origOptionsJson);
-            byte[] serverSecret = origOptions.Challenge;
+            byte[] serverSecret = options.Challenge;
+            // ES256 Credential Public Key Extraction
             var decodedPubKey = (CborMap)CborObject.Decode(creds.PublicKey);
+            // X and Y values represent the coordinates of a point on the elliptic curve, constituting the public key
             byte[] pubkeyX = (byte[])decodedPubKey.GetValue(-2);
             byte[] pubkeyY = (byte[])decodedPubKey.GetValue(-3);
             var lsig = new AccountGameWallet(pubkeyX, pubkeyY);
             var compiledSig = await lsig.Compile((DefaultApi)_algodApi);
             //get the signer proxy
-            var proxy = new Proxies.GameWalletProxy(compiledSig);
+            // var proxy = new Proxies.GameWalletProxy(compiledSig);
             //TODO - the sig just needs splitting?
-            proxy.ApproveTransferDelegated(clientResponse.Response.Signature, clientResponse.Response.Signature,
-                serverSecret, roundStart, roundEnd);
-            */
+            // proxy.ApproveTransferDelegated(clientResponse.Response.Signature, clientResponse.Response.Signature,
+            // serverSecret, roundStart, roundEnd);
 
             // 7. return OK to client
             return res;

@@ -1,15 +1,10 @@
 ﻿using AlgoStudio.Core.Attributes;
 using AlgoStudio.Core;
-using Algorand.Algod.Model.Transactions;
-using Org.BouncyCastle.Crypto.Paddings;
-using System.Text.RegularExpressions;
-using Algorand.Algod.Model;
 
 namespace RelyingParty.Algorand.Signatures
 {
     public class BasicSignature : SmartSignature
     {
-        AssetReference masterKeyAsset2;
         public override int Program()
         {
             InvokeSmartSignatureMethod();
@@ -17,86 +12,205 @@ namespace RelyingParty.Algorand.Signatures
         }
 
         [SmartSignatureMethod("AssetTransfer")]
-        /**
-         * Args
-         * [..., challenge, sign_pk_a(challenge), sign_pk_m(challenge), sign_pk_s(groupId, firstValid, lastValid)]
-         * Challenge is (pk_s, expirationRound, rand_b64) 
-         * groupIdFVLVSha256 is (groupId, firstValid, lastValid)
-         */
         public int ApproveAssetTransfer(
             AssetTransferTransactionReference txn,
             AssetReference masterKeyAsset,
-            byte[] pk_s_X, byte[] pk_s_Y, ulong expirationRound, byte[] rand_512bit, // Session details Challenge(pk_s, expirationRound, rand_b64)
-            byte[] groupIdFVLVSha256, // sha256 hash of Tx details (groupId, firstValid, lastValid)
-            byte[] sign_pk_a_R, byte[] sign_pk_a_S, // sign_pk_a(hash(challenge))
-            byte[] sign_pk_m_R, byte[] sign_pk_m_S, // sign_pk_m(challenge)
-            byte[] sign_pk_s_R, byte[] sign_pk_s_S // sign_pk_s(hash(groupId, firstValid, lastValid))
+            byte[] pkSess, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[0]
+            ulong rvStart, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[1]
+            ulong rvEnd, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[2]
+            byte[] randB64, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[3]
+            byte[] signCredR, byte[] signCredS, // sign_cred((pk_sess (32), rv_start (8), rv_end (8), random bytes))
+            byte[] signSess // sign_sess(txn.TxID)
         )
         {
-            /*
-            // Challenge may be sent by a phishing site, so we need to verify that the challenge is correct
-            byte[] pk_a_X = { 0xde, 0xad, 0xbe, 0xef }; // to be string replaced by the controller
-            byte[] pk_a_Y = { 0xde, 0xad, 0xca, 0xfe }; // to be string replaced by the controller
-            // ulong masterKeyAsset = 123456789; // to be string replaced by the controller
-            byte[] masterKeyReserve = masterKeyAsset.Reserve;
-
-            //usual checks
-            //do not allow anything else than a single asset transfer
-            if (GroupSize != 1) return 0;
-
+            // default checks            
             //do not permit any kind of rekey
             if (txn.RekeyTo != ZeroAddress) return 0;
-
             //do not permit any kind of close out
             if (txn.AssetCloseTo != ZeroAddress) return 0;
+            //do not allow anything else than a single asset transfer
+            if (GroupSize != 1) return 0;
+            //do not permit any kind of rekey
+            if (txn.RekeyTo != ZeroAddress) return 0;
+            // Reject if the lease is null
+            if (txn.Lease == null) return 0;
 
             // overflow checks
-            if (expirationRound > 4294967295) return 0;
-            // underflow checks
-            if (expirationRound < 0) return 0;
+            if (rvStart > 4294967295) return 0;
+            if (rvEnd > 4294967295) return 0;
 
-            // generate challenge sha256
-            byte[] expirationRoundBytes = expirationRound.ToTealBytes();
-            byte[] challenge = pk_s_X.Concat(pk_s_Y);
-            challenge = challenge.Concat(expirationRoundBytes);
-            challenge = challenge.Concat(rand_512bit);
-            // sha256 digest
-            byte[] challengeSha256 = Sha256(challenge);
+            // combine parameters into the didt, once each is cast to bytes[]
+            string rvStartString = rvStart.ToString();
+            byte[] rvStartBytes = rvStartString.ToByteArray();
+            string rvEndString = rvEnd.ToString();
+            byte[] rvEndBytes = rvEndString.ToByteArray();
+            // didt is (pk_sess (32), rv_start (8), rv_end (8), random bytes)
+            byte[] didt = pkSess.Concat(rvStartBytes);
+            didt = didt.Concat(rvEndBytes);
+            didt = didt.Concat(randB64);
 
-            // verify sign_pk_a(challenge)
-            bool verifyAuthenticatorSignedChallenge = Ecdsa_verify_secp256r1(challengeSha256, sign_pk_a_R, sign_pk_a_S, pk_a_X, pk_a_Y);
-            if (verifyAuthenticatorSignedChallenge == true) return 1;
+            // check didt has not expired
+            // i.e. txn.FirstValid and txn.LastValid should be within the range of rvStart and rvEnd (session lifetime)
+            if (txn.FirstValid > rvStart) return 0;
+            if (txn.FirstValid < rvEnd) return 0;
+            if (txn.LastValid > rvStart) return 0;
+            if (txn.LastValid < rvEnd) return 0;
 
-            bool verifyMasterSignedChallenge = Ecdsa_verify_secp256r1(challengeSha256, sign_pk_m_R, sign_pk_m_S, pk_s_X, pk_s_Y);
+            // hard-coded credential public key
+            byte[] pkCredX = { 0xde, 0xad, 0xbe, 0xef }; // to be string replaced by the controller
+            byte[] pkCredY = { 0xde, 0xad, 0xca, 0xfe }; // to be string replaced by the controller
 
-            //make sure only asset transfers are permitted (because the tooling does not yet automatically verify marshalled txns, not sure if it should)
+            // check sign_cred (credential signed the didt as valid) (i.e. the didt is valid)
+            bool verifyCredentialSignedDidt = Ecdsa_verify_secp256r1(didt, signCredR, signCredS, pkCredX, pkCredY);
+            if (verifyCredentialSignedDidt == false) return 0;
+
+            // check sign_sess (session key signed the txn as valid) (i.e. the txn is valid)
+            bool verifySessionSignedTxn = Ed25519verify(txn.TxID, signSess, pkSess);
+            if (verifySessionSignedTxn == false) return 0;
+
+
+            // verify the asset transfer is an asset transfer
             string txTypeCheck = "axfer";
             if (txn.TxType != txTypeCheck.ToByteArray()) return 0;
 
-            //reject if Lease is not set
-            //TODO
+            // Must be: asset transfer with default checks, lease, valid didt (not expired, credential signed, contains
+            // session key), valid txn (session key signed the txn as valid).
 
-            //Check that the concatenation of groupid, startround as bytes, endround as bytes, is signed by the address
-            txn.FirstValid
-
-            byte[] groupId = GroupId;
-            byte[] message = groupId.Concat(startround);
-            message = groupId.Concat(endround);
-
-            bool check = Ecdsa_verify_secp256r1(message, signatureR, signatureS, pubkeyX, pubkeyY);
-
-            if (check == true) return 1;
-            else return 0;
-            */
-            return 0;
+            return 1;
         }
 
         [SmartSignatureMethod("Payment")]
-        public int ApprovePayment(PaymentTransactionReference txn)
+        public int ApprovePayment(
+            PaymentTransactionReference txn,
+            AssetReference masterKeyAsset,
+            byte[] pkSess, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[0]
+            ulong rvStart, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[1]
+            ulong rvEnd, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[2]
+            byte[] randB64, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[3]
+            byte[] signCredR, byte[] signCredS, // sign_cred((pk_sess (32), rv_start (8), rv_end (8), random bytes))
+            byte[] signSess // sign_sess(txn.TxID)
+        )
         {
-            //TODO - Only allow the master account to do a transfer
-            // Make it more involved 
-            return 0;
+            // default checks            
+            //do not permit any kind of rekey
+            if (txn.RekeyTo != ZeroAddress) return 0;
+            //do not permit any kind of close out
+            if (txn.CloseRemainderTo != ZeroAddress) return 0;
+            //do not allow anything else than a single asset transfer
+            if (GroupSize != 1) return 0;
+            //do not permit any kind of rekey
+            if (txn.RekeyTo != ZeroAddress) return 0;
+            // Reject if the lease is null
+            if (txn.Lease == null) return 0;
+
+            // overflow checks
+            if (rvStart > 4294967295) return 0;
+            if (rvEnd > 4294967295) return 0;
+
+            // combine parameters into the didt, once each is cast to bytes[]
+            string rvStartString = rvStart.ToString();
+            byte[] rvStartBytes = rvStartString.ToByteArray();
+            string rvEndString = rvEnd.ToString();
+            byte[] rvEndBytes = rvEndString.ToByteArray();
+            // didt is (pk_sess (32), rv_start (8), rv_end (8), random bytes)
+            byte[] didt = pkSess.Concat(rvStartBytes);
+            didt = didt.Concat(rvEndBytes);
+            didt = didt.Concat(randB64);
+
+            // check didt has not expired
+            // i.e. txn.FirstValid and txn.LastValid should be within the range of rvStart and rvEnd (session lifetime)
+            if (txn.FirstValid > rvStart) return 0;
+            if (txn.FirstValid < rvEnd) return 0;
+            if (txn.LastValid > rvStart) return 0;
+            if (txn.LastValid < rvEnd) return 0;
+
+            // hard-coded credential public key
+            byte[] pkCredX = { 0xde, 0xad, 0xbe, 0xef }; // to be string replaced by the controller
+            byte[] pkCredY = { 0xde, 0xad, 0xca, 0xfe }; // to be string replaced by the controller
+
+            // check sign_cred (credential signed the didt as valid) (i.e. the didt is valid)
+            bool verifyCredentialSignedDidt = Ecdsa_verify_secp256r1(didt, signCredR, signCredS, pkCredX, pkCredY);
+            if (verifyCredentialSignedDidt == false) return 0;
+
+            // check sign_sess (session key signed the txn as valid) (i.e. the txn is valid)
+            bool verifySessionSignedTxn = Ed25519verify(txn.TxID, signSess, pkSess);
+            if (verifySessionSignedTxn == false) return 0;
+
+
+            // verify the payment is a payment
+            string txTypeCheck = "pay";
+            if (txn.TxType != txTypeCheck.ToByteArray()) return 0;
+
+            // Must be: pay with default checks, lease, valid didt (not expired, credential signed, contains
+            // session key), valid txn (session key signed the txn as valid).
+
+            return 1;
+        }
+
+        [SmartSignatureMethod("AppCall")]
+        public int ApprovePayment(
+            AppCallTransactionReference txn,
+            AssetReference masterKeyAsset,
+            byte[] pkSess, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[0]
+            ulong rvStart, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[1]
+            ulong rvEnd, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[2]
+            byte[] randB64, // (pk_sess (32), rv_start (8), rv_end (8), random bytes)[3]
+            byte[] signCredR, byte[] signCredS, // sign_cred((pk_sess (32), rv_start (8), rv_end (8), random bytes))
+            byte[] signSess // sign_sess(txn.TxID)
+        )
+        {
+            // default checks            
+            //do not permit any kind of rekey
+            if (txn.RekeyTo != ZeroAddress) return 0;
+            //do not allow anything else than a single asset transfer
+            if (GroupSize != 1) return 0;
+            //do not permit any kind of rekey
+            if (txn.RekeyTo != ZeroAddress) return 0;
+            // Reject if the lease is null
+            if (txn.Lease == null) return 0;
+
+            // overflow checks
+            if (rvStart > 4294967295) return 0;
+            if (rvEnd > 4294967295) return 0;
+
+            // combine parameters into the didt, once each is cast to bytes[]
+            string rvStartString = rvStart.ToString();
+            byte[] rvStartBytes = rvStartString.ToByteArray();
+            string rvEndString = rvEnd.ToString();
+            byte[] rvEndBytes = rvEndString.ToByteArray();
+            // didt is (pk_sess (32), rv_start (8), rv_end (8), random bytes)
+            byte[] didt = pkSess.Concat(rvStartBytes);
+            didt = didt.Concat(rvEndBytes);
+            didt = didt.Concat(randB64);
+
+            // check didt has not expired
+            // i.e. txn.FirstValid and txn.LastValid should be within the range of rvStart and rvEnd (session lifetime)
+            if (txn.FirstValid > rvStart) return 0;
+            if (txn.FirstValid < rvEnd) return 0;
+            if (txn.LastValid > rvStart) return 0;
+            if (txn.LastValid < rvEnd) return 0;
+
+            // hard-coded credential public key
+            byte[] pkCredX = { 0xde, 0xad, 0xbe, 0xef }; // to be string replaced by the controller
+            byte[] pkCredY = { 0xde, 0xad, 0xca, 0xfe }; // to be string replaced by the controller
+
+            // check sign_cred (credential signed the didt as valid) (i.e. the didt is valid)
+            bool verifyCredentialSignedDidt = Ecdsa_verify_secp256r1(didt, signCredR, signCredS, pkCredX, pkCredY);
+            if (verifyCredentialSignedDidt == false) return 0;
+
+            // check sign_sess (session key signed the txn as valid) (i.e. the txn is valid)
+            bool verifySessionSignedTxn = Ed25519verify(txn.TxID, signSess, pkSess);
+            if (verifySessionSignedTxn == false) return 0;
+
+
+            // verify the payment is a payment
+            string txTypeCheck = "appl";
+            if (txn.TxType != txTypeCheck.ToByteArray()) return 0;
+
+            // Must be: app call with default checks, lease, valid didt (not expired, credential signed, contains
+            // session key), valid txn (session key signed the txn as valid).
+
+            return 1;
         }
     }
 }

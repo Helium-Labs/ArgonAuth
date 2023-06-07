@@ -321,7 +321,7 @@ public class PlanetScaleDatabase
     {
         var conn = await GetMySqlConnection();
 
-        using (var cmd = new MySqlCommand("INSERT INTO DIDT (user_id, public_key) VALUES (@user_id, @didt) ON DUPLICATE KEY UPDATE public_key = @didt", conn))
+        using (var cmd = new MySqlCommand("INSERT INTO DIDT (user_id, didt) VALUES (@user_id, @didt) ON DUPLICATE KEY UPDATE didt = @didt", conn))
         {
             cmd.Parameters.AddWithValue("@user_id", user_id);
             cmd.Parameters.AddWithValue("@didt", didt);

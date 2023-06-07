@@ -26,21 +26,18 @@ namespace Proxies
 		{
 			var abiHandle = Encoding.UTF8.GetBytes("Ax1");
 			base.UpdateSmartSignature( new List<object> {abiHandle,signatureR,signatureS,startround,endround} );
-
 		}
 
 		public void ApproveTransferDelegated (byte[] signatureR,byte[] signatureS,byte[] proofKey,ulong startround,ulong endround)
 		{
 			var abiHandle = Encoding.UTF8.GetBytes("Ax1Delegated");
 			base.UpdateSmartSignature( new List<object> {abiHandle,signatureR,signatureS,proofKey,startround,endround} );
-
 		}
 
 		public void ApprovePayment ()
 		{
 			var abiHandle = Encoding.UTF8.GetBytes("Payment");
 			base.UpdateSmartSignature( new List<object> {abiHandle} );
-
 		}
 
 	}
