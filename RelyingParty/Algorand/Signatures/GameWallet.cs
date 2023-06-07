@@ -39,10 +39,8 @@ namespace RelyingParty.Algorand.Signatures
             if (rvEnd > 4294967295) return 0;
 
             // combine parameters into the didt, once each is cast to bytes[]
-            string rvStartString = rvStart.ToString();
-            byte[] rvStartBytes = rvStartString.ToByteArray();
-            string rvEndString = rvEnd.ToString();
-            byte[] rvEndBytes = rvEndString.ToByteArray();
+            byte[] rvStartBytes = rvStart.ToTealBytes();
+            byte[] rvEndBytes = rvEnd.ToTealBytes();
             // didt is (pk_sess (32), rv_start (8), rv_end (8), random bytes)
             byte[] didt = pkSess.Concat(rvStartBytes);
             didt = didt.Concat(rvEndBytes);
@@ -105,10 +103,8 @@ namespace RelyingParty.Algorand.Signatures
             if (rvEnd > 4294967295) return 0;
 
             // combine parameters into the didt, once each is cast to bytes[]
-            string rvStartString = rvStart.ToString();
-            byte[] rvStartBytes = rvStartString.ToByteArray();
-            string rvEndString = rvEnd.ToString();
-            byte[] rvEndBytes = rvEndString.ToByteArray();
+            byte[] rvStartBytes = rvStart.ToTealBytes();
+            byte[] rvEndBytes = rvEnd.ToTealBytes();
             // didt is (pk_sess (32), rv_start (8), rv_end (8), random bytes)
             byte[] didt = pkSess.Concat(rvStartBytes);
             didt = didt.Concat(rvEndBytes);
@@ -170,10 +166,8 @@ namespace RelyingParty.Algorand.Signatures
             if (rvEnd > 4294967295) return 0;
 
             // combine parameters into the didt, once each is cast to bytes[]
-            string rvStartString = rvStart.ToString();
-            byte[] rvStartBytes = rvStartString.ToByteArray();
-            string rvEndString = rvEnd.ToString();
-            byte[] rvEndBytes = rvEndString.ToByteArray();
+            byte[] rvStartBytes = rvStart.ToTealBytes();
+            byte[] rvEndBytes = rvEnd.ToTealBytes();
             // didt is (pk_sess (32), rv_start (8), rv_end (8), random bytes)
             byte[] didt = pkSess.Concat(rvStartBytes);
             didt = didt.Concat(rvEndBytes);
