@@ -32,7 +32,7 @@ namespace RelyingParty.Algorand.Signatures
             //do not permit any kind of rekey
             if (txn.RekeyTo != ZeroAddress) return 0;
             // Reject if the lease is null
-            if (txn.Lease == null) return 0;
+            if (txn.Lease.Length == 0) return 0;
 
             // overflow checks
             if (rvStart > 4294967295) return 0;
@@ -98,7 +98,7 @@ namespace RelyingParty.Algorand.Signatures
             //do not permit any kind of rekey
             if (txn.RekeyTo != ZeroAddress) return 0;
             // Reject if the lease is null
-            if (txn.Lease == null) return 0;
+            if (txn.Lease.Length == 0) return 0;
 
             // overflow checks
             if (rvStart > 4294967295) return 0;
@@ -163,7 +163,7 @@ namespace RelyingParty.Algorand.Signatures
             //do not permit any kind of rekey
             if (txn.RekeyTo != ZeroAddress) return 0;
             // Reject if the lease is null
-            if (txn.Lease == null) return 0;
+            if (txn.Lease.Length == 0) return 0;
 
             // overflow checks
             if (rvStart > 4294967295) return 0;
