@@ -17,11 +17,13 @@ using Algorand;
 using Algorand.Algod.Model.Transactions;
 using Algorand.Utils;
 using Microsoft.Extensions.Logging;
+using Proxies;
+using RelyingParty.Utilities;
 
 namespace Fido2Demo;
 
 [Route("api/[controller]")]
-public class Fido2Controller : Controller
+public class TxSigningController : Controller
 {
     private IFido2 _fido2;
     private IMasterAccount _serverAccount;
@@ -39,7 +41,7 @@ public class Fido2Controller : Controller
 
     private readonly ILogger _logger;
 
-    public Fido2Controller(ILogger<Fido2Controller> logger, IFido2 fido2, IMasterAccount serverAccount,
+    public TxSigningController(ILogger<TxSigningController> logger, IFido2 fido2, IMasterAccount serverAccount,
         IDefaultApi algod, IApi kmdApi,
         PlanetScaleDatabase database)
     {
@@ -72,7 +74,7 @@ public class Fido2Controller : Controller
             return false;
         }
     }
-    
+
     // Get request, with no parameters, that returns the current round.
     [HttpGet]
     [Route("/getLastRound")]
@@ -220,6 +222,7 @@ public class Fido2Controller : Controller
             await SetUpAccounts();
             await preFundLsig(lsigCompiled);
             */
+
             MakeCredentialResponse response = new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult = success,
@@ -320,8 +323,6 @@ public class Fido2Controller : Controller
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
             sessionJson["gradian.delegationSecret"] = options.ToJson();
             // 4. Temporarily store options, session/in-memory cache/redis/db
-            //var hashedChallenge = Digester.Digest(options.Challenge);
-            //options.Challenge = hashedChallenge;
             sessionJson["fido2.assertionOptions"] = options.ToJson();
 
             string sessionJsonString = _db.CreateJsonFromDictionary(sessionJson);
@@ -336,19 +337,8 @@ public class Fido2Controller : Controller
         {
             _logger.LogError("Failed to make credential: {Exception}", e);
             return new AssertionOptionsResponse()
-                { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
+            { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
         }
-    }
-
-    private byte[] ulongToBigEndianBytes(ulong l)
-    {
-        IEnumerable<byte> res = BitConverter.GetBytes(l);
-        if (BitConverter.IsLittleEndian)
-        {
-            res = res.Reverse();
-        }
-
-        return res.ToArray();
     }
 
     [HttpPost]
@@ -398,21 +388,15 @@ public class Fido2Controller : Controller
             };
 
             // 5. Make the assertion
-            // DEMO : modify the challenge to contain the bigendian concatenation of roundstart and roundend
-            //options.Challenge = options.Challenge.Concat(ulongToBigEndianBytes(roundStart))
-            //    .Concat(ulongToBigEndianBytes(roundEnd)).ToArray();
             var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback,
                 cancellationToken: cancellationToken);
 
             // extract the challenge and record it as their session token for access delegation.
             // Expiration dictated by challenge encoded DIDT token.
             byte[] didt = options.Challenge;
-            byte[] didtPubKey = didt.Take(32).ToArray();
-            // roundStart and roundEnd are 8 bytes each
-            byte[] didtRoundStart = didt.Skip(32).Take(8).ToArray();
-            byte[] didtRoundEnd = didt.Skip(40).Take(8).ToArray();
-            await _db.UpsertDidtPublicKey(clientResponse.Response.UserHandle, didt);
-
+            byte[] signature = clientResponse.Response.Signature;
+            await _db.UpsertDidt(clientResponse.Id, didt, signature);
+            
             // 6. Store the updated counter
             await _db.UpdateCounter(res.CredentialId, res.Counter);
 
@@ -425,11 +409,10 @@ public class Fido2Controller : Controller
             byte[] pubkeyY = (byte[])decodedPubKey.GetValue(-3);
             var lsig = new AccountGameWallet(pubkeyX, pubkeyY);
             var compiledSig = await lsig.Compile((DefaultApi)_algodApi);
-            //get the signer proxy
-            // var proxy = new Proxies.GameWalletProxy(compiledSig);
-            //TODO - the sig just needs splitting?
-            // proxy.ApproveTransferDelegated(clientResponse.Response.Signature, clientResponse.Response.Signature,
-            // serverSecret, roundStart, roundEnd);
+
+            // get the signer proxy
+            // GameWalletProxy proxy = new Proxies.GameWalletProxy(compiledSig);
+            // send funding to the proxy
 
             // 7. return OK to client
             return res;
@@ -460,7 +443,7 @@ public class Fido2Controller : Controller
         foreach (var a in accs.Addresses)
         {
             var resp = await _kmdApi.ExportKeyAsync(new ExportKeyRequest()
-                { Address = a, Wallet_handle_token = handle, Wallet_password = "" });
+            { Address = a, Wallet_handle_token = handle, Wallet_password = "" });
             Account account = new Account(resp.Private_key);
             accounts.Add(account);
         }
@@ -473,7 +456,7 @@ public class Fido2Controller : Controller
         var wallets = await _kmdApi.ListWalletsAsync(null);
         var wallet = wallets.Wallets.Where(w => w.Name == walletName).FirstOrDefault();
         var handle = await _kmdApi.InitWalletHandleTokenAsync(new InitWalletHandleTokenRequest()
-            { Wallet_id = wallet.Id, Wallet_password = "" });
+        { Wallet_id = wallet.Id, Wallet_password = "" });
         return handle.Wallet_handle_token;
     }
 }

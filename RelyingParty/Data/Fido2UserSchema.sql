@@ -29,8 +29,9 @@ CREATE TABLE `credentials` (
 -- Table for storing DIDT data
 CREATE TABLE `DIDT` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
-    `user_id` VARBINARY(255) NOT NULL,
+    `credential_id` VARBINARY(255) NOT NULL,
     `didt` BLOB NOT NULL,
+    `signature` BLOB NOT NULL,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `user_id` (`user_id`)
+    UNIQUE KEY `credential_id` (`credential_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

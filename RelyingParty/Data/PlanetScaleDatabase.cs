@@ -21,7 +21,7 @@ public class PlanetScaleDatabase
     public async Task<MySqlConnection> GetMySqlConnection(CancellationToken cancellationToken = default)
     {
         _conn ??= new MySqlConnection(_connectionString);
-        if(_conn.State != ConnectionState.Open)
+        if (_conn.State != ConnectionState.Open)
         {
             // it's not open yet, so open it. Don't open a connection that's already open.
             await _conn.OpenAsync(cancellationToken);
@@ -33,7 +33,7 @@ public class PlanetScaleDatabase
     {
 
         var conn = await GetMySqlConnection();
-        
+
         // Read and return the user if it already exists
         using (var cmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", conn))
         {
@@ -61,10 +61,10 @@ public class PlanetScaleDatabase
             cmd.Parameters.AddWithValue("@user_id", user.Id);
             cmd.ExecuteNonQuery();
         }
-        
+
         return user;
     }
-    
+
     public async Task UpdateUserJsonMetadata(string username, string newJsonMetadata)
     {
         var conn = await GetMySqlConnection();
@@ -83,9 +83,9 @@ public class PlanetScaleDatabase
     public async Task<List<StoredCredential>> GetCredentialsByUser(Fido2User user)
     {
         var credentials = new List<StoredCredential>();
-            
+
         var conn = await GetMySqlConnection();
-    
+
         using (var cmd = new MySqlCommand("SELECT * FROM credentials WHERE user_id = @user_id", conn))
         {
             cmd.Parameters.AddWithValue("@user_id", user.Id);
@@ -137,7 +137,7 @@ public class PlanetScaleDatabase
 
         return users;
     }
-    
+
     public string GetValueFromJsonByKey(string jsonString, string key)
     {
         try
@@ -166,7 +166,7 @@ public class PlanetScaleDatabase
 
         return json;
     }
-    
+
     public Dictionary<string, string>? CreateDictionaryFromJson(string json)
     {
         // Deserialize the JSON string into a dictionary
@@ -240,7 +240,7 @@ public class PlanetScaleDatabase
         }
     }
 
-    
+
     public async Task<StoredCredential?> GetCredentialById(byte[] id)
     {
 
@@ -313,19 +313,43 @@ public class PlanetScaleDatabase
             cmd.ExecuteNonQuery();
         }
     }
-    
+
     // update the table didt, with the new value of the DIDT public key.
     // If there is an existing value, it will be overwritten. Where user_id is the user's ID,
     // and didt is the DIDT public key. Key is the user_id.
-    public async Task UpsertDidtPublicKey(byte[] user_id, byte[] didt)
+    public async Task UpsertDidt(byte[] credential_id, byte[] didt, byte[] signature)
     {
         var conn = await GetMySqlConnection();
 
-        using (var cmd = new MySqlCommand("INSERT INTO DIDT (user_id, didt) VALUES (@user_id, @didt) ON DUPLICATE KEY UPDATE didt = @didt", conn))
+        using (var cmd = new MySqlCommand("INSERT INTO DIDT (credential_id, didt, signature) VALUES (@credential_id, @didt, @signature) ON DUPLICATE KEY UPDATE didt = @didt, signature = @signature", conn))
         {
-            cmd.Parameters.AddWithValue("@user_id", user_id);
+            cmd.Parameters.AddWithValue("@credential_id", credential_id);
             cmd.Parameters.AddWithValue("@didt", didt);
+            cmd.Parameters.AddWithValue("@signature", signature);
             cmd.ExecuteNonQuery();
         }
+    }
+
+    // select the Didt where the user_id is the user's ID.
+    public async Task<LSIGSign.Models.SignedDidt?> GetSignedDidt(byte[] credentialId)
+    {
+        var conn = await GetMySqlConnection();
+
+        using (var cmd = new MySqlCommand("SELECT * FROM DIDT WHERE credential_id = @credential_id", conn))
+        {
+            cmd.Parameters.AddWithValue("@credential_id", credentialId);
+            using (var reader = cmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    var didt = (byte[])reader["didt"];
+                    var signature = (byte[])reader["signature"];
+                    var signedDidt = new LSIGSign.Models.SignedDidt(didt, signature);
+                    return signedDidt;
+                }
+            }
+        }
+        conn.Close();
+        return null;
     }
 }
