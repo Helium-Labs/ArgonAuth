@@ -1,45 +1,33 @@
-using System;
-using Algorand.Algod;
-using Algorand.Algod.Model;
-using Algorand.Algod.Model.Transactions;
 using AlgoStudio;
 using Algorand;
-using AlgoStudio.Core;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Proxies
 {
+    public class GameWalletProxy : SignatureBase
+    {
+        LogicsigSignature smartSig;
 
-	
-	public class GameWalletProxy : SignatureBase
-	{
-		LogicsigSignature smartSig;
-		
-		public GameWalletProxy(LogicsigSignature logicSig) : base(logicSig) 
-		{
-		}
+        public GameWalletProxy(LogicsigSignature logicSig) : base(logicSig)
+        {
+        }
 
-		public void ApproveTransferClient (byte[] signatureR,byte[] signatureS,byte[] startround,byte[] endround)
-		{
-			var abiHandle = Encoding.UTF8.GetBytes("Ax1");
-			base.UpdateSmartSignature( new List<object> {abiHandle,signatureR,signatureS,startround,endround} );
-		}
+        public void ApproveAssetTransfer(byte[] pkSess, ulong rvStart, ulong rvEnd, byte[] randB64, byte[] signCredR, byte[] signCredS, byte[] signSess)
+        {
+            var abiHandle = Encoding.UTF8.GetBytes("AssetTransfer");
+            base.UpdateSmartSignature(new List<object> { abiHandle, pkSess, rvStart, rvEnd, randB64, signCredR, signCredS, signSess });
+        }
 
-		public void ApproveTransferDelegated (byte[] signatureR,byte[] signatureS,byte[] proofKey,ulong startround,ulong endround)
-		{
-			var abiHandle = Encoding.UTF8.GetBytes("Ax1Delegated");
-			base.UpdateSmartSignature( new List<object> {abiHandle,signatureR,signatureS,proofKey,startround,endround} );
-		}
+        public void ApprovePayment(byte[] pkSess, ulong rvStart, ulong rvEnd, byte[] randB64, byte[] signCredR, byte[] signCredS, byte[] signSess)
+        {
+            var abiHandle = Encoding.UTF8.GetBytes("Payment");
+            base.UpdateSmartSignature(new List<object> { abiHandle, pkSess, rvStart, rvEnd, randB64, signCredR, signCredS, signSess });
+        }
 
-		public void ApprovePayment ()
-		{
-			var abiHandle = Encoding.UTF8.GetBytes("Payment");
-			base.UpdateSmartSignature( new List<object> {abiHandle} );
-		}
-
-	}
-
+        public void ApproveAppCall(byte[] pkSess, ulong rvStart, ulong rvEnd, byte[] randB64, byte[] signCredR, byte[] signCredS, byte[] signSess)
+        {
+            var abiHandle = Encoding.UTF8.GetBytes("AppCall");
+            base.UpdateSmartSignature(new List<object> { abiHandle, pkSess, rvStart, rvEnd, randB64, signCredR, signCredS, signSess });
+        }
+    }
 }

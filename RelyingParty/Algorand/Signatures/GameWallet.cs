@@ -67,7 +67,6 @@ namespace RelyingParty.Algorand.Signatures
             bool verifySessionSignedTxn = Ed25519verify(txn.TxID, signSess, pkSess);
             if (verifySessionSignedTxn == false) return 0;
 
-
             // verify the asset transfer is an asset transfer
             string txTypeCheck = "axfer";
             if (txn.TxType != txTypeCheck.ToByteArray()) return 0;
