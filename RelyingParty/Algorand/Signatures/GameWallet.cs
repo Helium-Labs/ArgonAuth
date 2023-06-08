@@ -29,8 +29,6 @@ namespace RelyingParty.Algorand.Signatures
             if (txn.AssetCloseTo != ZeroAddress) return 0;
             //do not allow anything else than a single asset transfer
             if (GroupSize != 1) return 0;
-            //do not permit any kind of rekey
-            if (txn.RekeyTo != ZeroAddress) return 0;
             // Reject if the lease is null
             if (txn.Lease.Length == 0) return 0;
 
@@ -93,8 +91,6 @@ namespace RelyingParty.Algorand.Signatures
             if (txn.CloseRemainderTo != ZeroAddress) return 0;
             //do not allow anything else than a single asset transfer
             if (GroupSize != 1) return 0;
-            //do not permit any kind of rekey
-            if (txn.RekeyTo != ZeroAddress) return 0;
             // Reject if the lease is null
             if (txn.Lease.Length == 0) return 0;
 
@@ -156,8 +152,6 @@ namespace RelyingParty.Algorand.Signatures
             if (txn.RekeyTo != ZeroAddress) return 0;
             //do not allow anything else than a single asset transfer
             if (GroupSize != 1) return 0;
-            //do not permit any kind of rekey
-            if (txn.RekeyTo != ZeroAddress) return 0;
             // Reject if the lease is null
             if (txn.Lease.Length == 0) return 0;
 
