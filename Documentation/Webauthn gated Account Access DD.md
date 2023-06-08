@@ -211,14 +211,14 @@ Only the funder can Opt-In the contract, to any asset of their choosing, where t
 
 ### Cost Analysis
 
-- Fee pooling would cost at least 3 x MinTXFee. To cover itself, the lsig initiating owner call, and the inner txn itself. Ideally have all purchase type TX cover its fee, pushed back onto the user. Fees are not reclaimable.
-- MBR is reclaimable, except for the MBR to create the escrow smart contract. An initial MBR of 0.1A to create the escrow smart contract is needed. If the LSIG creates the escrow SC, it doesn't need an additional 0.1A to Opt-In.
+- Fee pooling costing > 3 x MinTXFee. To cover itself, the lsig initiating owner call, and the inner txn itself. Ideally have all purchase type TX cover its fee, pushed back onto the user. Fees are not reclaimable.
+- By creating the frictionless escrow wallet on behalf of the LSIG for a total of 0.1A to create the contract. Then through fee pooling, you can interact with the dApp from the LSIG with no balance (since AVM 7).
 
 Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
 - https://developer.algorand.org/docs/get-details/dapps/smart-contracts/apps/innertx
 - https://github.com/FrankSzendzielarz/AlgorandVisualStudio/blob/main/Transactions/InnerTransactions.md
-
+- https://developer.algorand.org/articles/avm-7-new-features/
 
 ### User Story
 
