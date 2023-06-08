@@ -213,6 +213,7 @@ Only the funder can Opt-In the contract, to any asset of their choosing, where t
 
 - Fee pooling costing > 3 x MinTXFee. To cover itself, the lsig initiating owner call, and the inner txn itself. Ideally have all purchase type TX cover its fee, pushed back onto the user. Fees are not reclaimable.
 - By creating the frictionless escrow wallet on behalf of the LSIG for a total of 0.1A to create the contract. Then through fee pooling, you can interact with the dApp from the LSIG with no balance (since AVM 7).
+- Therefore a total MBR of 0.1A. Fee per call of > 3 x MinTXFee.
 
 Sources:
 - https://developer.algorand.org/docs/get-details/transactions/?from_query=fee%20pool#pooled-transaction-fees
