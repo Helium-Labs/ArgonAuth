@@ -1,12 +1,11 @@
 using System.Data;
-using Fido2NetLib.Development;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using MySql.Data.MySqlClient;
 using System.Text.Json;
 using Newtonsoft.Json;
 using JsonException = System.Text.Json.JsonException;
-
+using RelyingParty.Models;
 
 public class PlanetScaleDatabase
 {
@@ -94,13 +93,18 @@ public class PlanetScaleDatabase
             {
                 while (reader.Read())
                 {
+                    // TryParse credential type into PublicKeyCredentialType
+                    if (!Enum.TryParse(reader.GetString("cred_type"), out PublicKeyCredentialType publicKeyCredentialType))
+                    {
+                        throw new Exception("Invalid credential type");
+                    }
                     credentials.Add(new StoredCredential
                     {
                         Descriptor = new PublicKeyCredentialDescriptor((byte[])reader["credential_id"]),
                         PublicKey = (byte[])reader["public_key"],
                         UserHandle = (byte[])reader["user_id"],
-                        SignatureCounter = reader.GetUInt32("signature_counter"),
-                        CredType = reader.GetString("cred_type"),
+                        SignCount = reader.GetUInt32("signature_counter"),
+                        CredType = publicKeyCredentialType,
                         RegDate = reader.GetDateTime("reg_date"),
                         AaGuid = reader.GetGuid("aa_guid")
                     });
@@ -253,13 +257,18 @@ public class PlanetScaleDatabase
             {
                 if (reader.Read())
                 {
+                    // TryParse credential type into PublicKeyCredentialType
+                    if (!Enum.TryParse(reader.GetString("cred_type"), out PublicKeyCredentialType publicKeyCredentialType))
+                    {
+                        throw new Exception("Invalid credential type");
+                    }
                     return new StoredCredential
                     {
                         Descriptor = new PublicKeyCredentialDescriptor((byte[])reader["credential_id"]),
                         PublicKey = (byte[])reader["public_key"],
                         UserHandle = (byte[])reader["user_id"],
-                        SignatureCounter = reader.GetUInt32("signature_counter"),
-                        CredType = reader.GetString("cred_type"),
+                        SignCount = reader.GetUInt32("signature_counter"),
+                        CredType = publicKeyCredentialType,
                         RegDate = reader.GetDateTime("reg_date"),
                         AaGuid = reader.GetGuid("aa_guid")
                     };
@@ -285,13 +294,18 @@ public class PlanetScaleDatabase
             {
                 while (await reader.ReadAsync(cancellationToken))
                 {
+                    // TryParse credential type into PublicKeyCredentialType
+                    if (!Enum.TryParse(reader.GetString("cred_type"), out PublicKeyCredentialType publicKeyCredentialType))
+                    {
+                        throw new Exception("Invalid credential type");
+                    }
                     credentials.Add(new StoredCredential
                     {
                         Descriptor = new PublicKeyCredentialDescriptor((byte[])reader["credential_id"]),
                         PublicKey = (byte[])reader["public_key"],
                         UserHandle = (byte[])reader["user_id"],
-                        SignatureCounter = (uint)reader.GetInt32("signature_counter"),
-                        CredType = reader.GetString("cred_type"),
+                        SignCount = (uint)reader.GetInt32("signature_counter"),
+                        CredType = publicKeyCredentialType,
                         RegDate = reader.GetDateTime("reg_date"),
                         AaGuid = reader.GetGuid("aa_guid")
                     });

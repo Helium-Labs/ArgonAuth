@@ -17,7 +17,7 @@
   <ItemGroup>
     <PackageReference Include="AlgoStudio" Version="1.1.50" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="8.1.0" />
-    <PackageReference Include="Fido2.AspNet" Version="3.0.1" />
+    <PackageReference Include="Fido2.AspNet" Version="4.0.0-beta4" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
     <PackageReference Include="MySql.Data" Version="8.0.33" />
     <PackageReference Include="NSwag.AspNetCore" Version="13.19.0" />

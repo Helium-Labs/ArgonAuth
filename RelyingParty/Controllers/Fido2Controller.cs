@@ -1,5 +1,4 @@
 using Fido2NetLib;
-using Fido2NetLib.Development;
 using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Mvc;
 using RelyingParty.Algorand.ServerAccount;
@@ -16,9 +15,7 @@ using Algorand.Algod.Model;
 using Algorand;
 using Algorand.Algod.Model.Transactions;
 using Algorand.Utils;
-using Microsoft.Extensions.Logging;
-using Proxies;
-using RelyingParty.Utilities;
+using RelyingParty.Models;
 
 namespace Fido2Demo;
 
@@ -189,21 +186,21 @@ public class TxSigningController : Controller
             }
 
             // 3. Store the credentials in db
-            byte[] CredentialId = success.Result.CredentialId;
+            byte[] CredentialId = success.Result.Id;
             await _db.AddCredentialToUser(options.User, new StoredCredential
             {
                 Descriptor = new PublicKeyCredentialDescriptor(CredentialId),
                 PublicKey = success.Result.PublicKey,
                 UserHandle = success.Result.User.Id,
-                SignatureCounter = success.Result.Counter,
-                CredType = success.Result.CredType,
+                SignCount = success.Result.SignCount,
+                CredType = success.Result.Type,
                 RegDate = DateTime.UtcNow,
-                AaGuid = success.Result.Aaguid
+                AaGuid = success.Result.AaGuid
             });
 
             // Remove Certificates from success because System.Text.Json cannot serialize them properly. See https://github.com/passwordless-lib/fido2-net-lib/issues/328
-            success.Result.AttestationCertificate = null;
-            success.Result.AttestationCertificateChain = null;
+            // success.Result.AttestationCertificate = null;
+            // success.Result.AttestationCertificateChain = null;
 
             /*
             //get pubkey
@@ -337,13 +334,13 @@ public class TxSigningController : Controller
         {
             _logger.LogError("Failed to make credential: {Exception}", e);
             return new AssertionOptionsResponse()
-            { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
+                { FidoAssertionOptions = new AssertionOptions { Status = "error", ErrorMessage = FormatException(e) } };
         }
     }
 
     [HttpPost]
     [Route("/makeAssertionAndDelegateAccess")]
-    public async Task<AssertionVerificationResult> MakeAssertionAndDelegateAccess(
+    public async Task<JsonResult> MakeAssertionAndDelegateAccess(
         [FromBody] AuthenticatorAssertionRawResponse clientResponse,
         string username,
         CancellationToken cancellationToken
@@ -388,18 +385,21 @@ public class TxSigningController : Controller
             };
 
             // 5. Make the assertion
-            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey, storedCounter, callback,
-                cancellationToken: cancellationToken);
-
+            var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey,
+                creds.DevicePublicKeys, storedCounter, callback, cancellationToken);
             // extract the challenge and record it as their session token for access delegation.
             // Expiration dictated by challenge encoded DIDT token.
             byte[] didt = options.Challenge;
             byte[] signature = clientResponse.Response.Signature;
             await _db.UpsertDidt(clientResponse.Id, didt, signature);
-            
-            // 6. Store the updated counter
-            await _db.UpdateCounter(res.CredentialId, res.Counter);
 
+            // 6. Store the updated counter
+            await _db.UpdateCounter(res.CredentialId, res.SignCount);
+
+            // @TODO: May need to also update the value stored in the database, as this is temporary.
+            if (res.DevicePublicKey is not null)
+                creds.DevicePublicKeys.Add(res.DevicePublicKey);
+            
             // DEMO: now let's test the lsig to prove that delegation worked (or not)
             byte[] serverSecret = options.Challenge;
             // ES256 Credential Public Key Extraction
@@ -415,11 +415,11 @@ public class TxSigningController : Controller
             // send funding to the proxy
 
             // 7. return OK to client
-            return res;
+            return Json(res);
         }
         catch (Exception e)
         {
-            return new AssertionVerificationResult { Status = "error", ErrorMessage = FormatException(e) };
+            return Json(new VerifyAssertionResult { Status = "error", ErrorMessage = FormatException(e) });
         }
     }
 
@@ -443,7 +443,7 @@ public class TxSigningController : Controller
         foreach (var a in accs.Addresses)
         {
             var resp = await _kmdApi.ExportKeyAsync(new ExportKeyRequest()
-            { Address = a, Wallet_handle_token = handle, Wallet_password = "" });
+                { Address = a, Wallet_handle_token = handle, Wallet_password = "" });
             Account account = new Account(resp.Private_key);
             accounts.Add(account);
         }
@@ -456,7 +456,7 @@ public class TxSigningController : Controller
         var wallets = await _kmdApi.ListWalletsAsync(null);
         var wallet = wallets.Wallets.Where(w => w.Name == walletName).FirstOrDefault();
         var handle = await _kmdApi.InitWalletHandleTokenAsync(new InitWalletHandleTokenRequest()
-        { Wallet_id = wallet.Id, Wallet_password = "" });
+            { Wallet_id = wallet.Id, Wallet_password = "" });
         return handle.Wallet_handle_token;
     }
 }

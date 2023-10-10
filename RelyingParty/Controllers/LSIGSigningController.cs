@@ -1,5 +1,4 @@
 using Fido2NetLib;
-using Fido2NetLib.Development;
 using Microsoft.AspNetCore.Mvc;
 using RelyingParty.Algorand.ServerAccount;
 using AlgoStudio.Clients;
@@ -13,6 +12,7 @@ using Algorand.Utils;
 using LSIGSign.Models;
 using RelyingParty.Utilities;
 using Proxies;
+using RelyingParty.Models;
 
 namespace LSIGSign.Handlers;
 
