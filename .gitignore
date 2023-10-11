@@ -57,3 +57,6 @@ ScaffoldingReadMe.txt
 
 # User-specific secrets
 secrets.json
+
+# Temporary folder (tmp)
+tmp/

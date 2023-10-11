@@ -244,3 +244,6 @@ _Pvt_Extensions
 
 # Serverless directories
 .serverless
+
+# Temporary folder (tmp)
+tmp/

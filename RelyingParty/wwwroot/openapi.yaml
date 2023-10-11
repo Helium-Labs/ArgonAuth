@@ -1,0 +1,770 @@
+openapi: 3.0.0
+info:
+  title: KeychainRelyingParty API with Algorand SmartSig delegated access
+  description: A client for interfacing with the KeychainRelyingParty API
+  version: v1
+servers:
+- url: https://localhost:5001
+paths:
+  /LSIGSignTransaction:
+    post:
+      tags:
+      - LSIGSigning
+      operationId: LSIGSigning_LSIGSignTransaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LSIGSignOptionsModel'
+        required: true
+        x-name: lsigOptions
+        x-position: 1
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: string
+  /usernameIsAvailable:
+    post:
+      tags:
+      - TxSigning
+      operationId: TxSigning_UsernameIsAvailable
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+        required: true
+        x-name: username
+        x-position: 1
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: boolean
+  /getLastRound:
+    get:
+      tags:
+      - TxSigning
+      operationId: TxSigning_GetRound
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
+  /makeCredentialOptions:
+    post:
+      tags:
+      - TxSigning
+      operationId: TxSigning_MakeCredentialOptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MakeCredentialOptionsModel'
+        required: true
+        x-name: model
+        x-position: 1
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialCreateOptions'
+  /makeCredential:
+    post:
+      tags:
+      - TxSigning
+      operationId: TxSigning_MakeCredential
+      parameters:
+      - name: username
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        x-position: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatorAttestationRawResponse'
+        required: true
+        x-name: attestationResponse
+        x-position: 2
+      responses:
+        "200":
+          description: ""
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /assertionOptions:
+    post:
+      tags:
+      - TxSigning
+      operationId: TxSigning_AssertionOptionsPost
+      parameters:
+      - name: didtPubKeyAsBase64
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        x-position: 2
+      - name: roundStartAsUINT64BEBase64
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        x-position: 3
+      - name: roundEndAsUINT64BEBase64
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        x-position: 4
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssertionOptionsPostModel'
+        required: true
+        x-name: assertionOptions
+        x-position: 1
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssertionOptionsResponse'
+  /makeAssertionAndDelegateAccess:
+    post:
+      tags:
+      - TxSigning
+      operationId: TxSigning_MakeAssertionAndDelegateAccess
+      parameters:
+      - name: username
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+        x-position: 2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatorAssertionRawResponse'
+        required: true
+        x-name: clientResponse
+        x-position: 1
+      responses:
+        "200":
+          description: ""
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+components:
+  schemas:
+    LSIGSignOptionsModel:
+      type: object
+      properties:
+        base64EncodedCredentialID:
+          type: string
+        transaction:
+          $ref: '#/components/schemas/Transaction'
+        base64EncodedTxSessSignature:
+          type: string
+      additionalProperties: false
+    Transaction:
+      type: object
+      properties:
+        lease:
+          type: string
+          format: byte
+          nullable: true
+        note:
+          type: string
+          format: byte
+          nullable: true
+        confirmedRound:
+          type: integer
+          format: int64
+          nullable: true
+        committed:
+          type: boolean
+        receiverRewards:
+          type: integer
+          format: int64
+          nullable: true
+        senderRewards:
+          type: integer
+          format: int64
+          nullable: true
+        closeRewards:
+          type: integer
+          format: int64
+          nullable: true
+        poolError:
+          type: string
+          nullable: true
+        fee:
+          type: integer
+          format: int64
+          nullable: true
+        firstValid:
+          type: integer
+          format: int64
+          nullable: true
+        genesisId:
+          type: string
+          nullable: true
+        genesisHash:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/Digest'
+        group:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/Digest'
+        lastValid:
+          type: integer
+          format: int64
+          nullable: true
+        rekeyTo:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/Address'
+        sender:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/Address'
+      additionalProperties: false
+      x-abstract: true
+    Digest:
+      type: object
+      properties:
+        bytes:
+          type: string
+          format: byte
+          nullable: true
+      additionalProperties: false
+    Address:
+      type: object
+      properties:
+        bytes:
+          type: string
+          format: byte
+          nullable: true
+      additionalProperties: false
+    CredentialCreateOptions:
+      allOf:
+      - $ref: '#/components/schemas/Fido2ResponseBase'
+      - type: object
+        properties:
+          rp:
+            nullable: true
+            oneOf:
+            - $ref: '#/components/schemas/PublicKeyCredentialRpEntity'
+          user:
+            nullable: true
+            oneOf:
+            - $ref: '#/components/schemas/Fido2User'
+          challenge:
+            type: string
+            format: byte
+            nullable: true
+          pubKeyCredParams:
+            type: array
+            nullable: true
+            items:
+              $ref: '#/components/schemas/PubKeyCredParam'
+          timeout:
+            type: integer
+            format: int64
+          attestation:
+            $ref: '#/components/schemas/AttestationConveyancePreference'
+          authenticatorSelection:
+            nullable: true
+            oneOf:
+            - $ref: '#/components/schemas/AuthenticatorSelection'
+          excludeCredentials:
+            type: array
+            nullable: true
+            items:
+              $ref: '#/components/schemas/PublicKeyCredentialDescriptor'
+          extensions:
+            nullable: true
+            oneOf:
+            - $ref: '#/components/schemas/AuthenticationExtensionsClientInputs'
+        additionalProperties: false
+    PublicKeyCredentialRpEntity:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+          nullable: true
+      additionalProperties: false
+    Fido2User:
+      type: object
+      properties:
+        name:
+          type: string
+          nullable: true
+        id:
+          type: string
+          format: byte
+          nullable: true
+        displayName:
+          type: string
+          nullable: true
+      additionalProperties: false
+    PubKeyCredParam:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/PublicKeyCredentialType'
+        alg:
+          $ref: '#/components/schemas/Algorithm'
+      additionalProperties: false
+    PublicKeyCredentialType:
+      type: string
+      description: ""
+      enum:
+      - public-key
+      - invalid
+      x-enumNames:
+      - PublicKey
+      - Invalid
+    Algorithm:
+      type: string
+      description: ""
+      enum:
+      - RS1
+      - RS512
+      - RS384
+      - RS256
+      - ES256K
+      - PS512
+      - PS384
+      - PS256
+      - ES512
+      - ES384
+      - EdDSA
+      - ES256
+      x-enumNames:
+      - RS1
+      - RS512
+      - RS384
+      - RS256
+      - ES256K
+      - PS512
+      - PS384
+      - PS256
+      - ES512
+      - ES384
+      - EdDSA
+      - ES256
+    AttestationConveyancePreference:
+      type: string
+      description: ""
+      enum:
+      - none
+      - indirect
+      - direct
+      - enterprise
+      x-enumNames:
+      - None
+      - Indirect
+      - Direct
+      - Enterprise
+    AuthenticatorSelection:
+      type: object
+      properties:
+        authenticatorAttachment:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticatorAttachment'
+        residentKey:
+          $ref: '#/components/schemas/ResidentKeyRequirement'
+        requireResidentKey:
+          type: boolean
+          deprecated: true
+          x-deprecatedMessage: Use property ResidentKey.
+        userVerification:
+          $ref: '#/components/schemas/UserVerificationRequirement'
+      additionalProperties: false
+    AuthenticatorAttachment:
+      type: string
+      description: ""
+      enum:
+      - platform
+      - cross-platform
+      x-enumNames:
+      - Platform
+      - CrossPlatform
+    ResidentKeyRequirement:
+      type: string
+      description: ""
+      enum:
+      - required
+      - preferred
+      - discouraged
+      x-enumNames:
+      - Required
+      - Preferred
+      - Discouraged
+    UserVerificationRequirement:
+      type: string
+      description: ""
+      enum:
+      - required
+      - preferred
+      - discouraged
+      x-enumNames:
+      - Required
+      - Preferred
+      - Discouraged
+    PublicKeyCredentialDescriptor:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/PublicKeyCredentialType'
+        id:
+          type: string
+          format: byte
+        transports:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/AuthenticatorTransport'
+      additionalProperties: false
+    AuthenticatorTransport:
+      type: string
+      description: ""
+      enum:
+      - usb
+      - nfc
+      - ble
+      - internal
+      x-enumNames:
+      - Usb
+      - Nfc
+      - Ble
+      - Internal
+    AuthenticationExtensionsClientInputs:
+      type: object
+      properties:
+        example.extension.bool:
+          nullable: true
+        appid:
+          type: string
+          nullable: true
+        authnSel:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: byte
+        exts:
+          type: boolean
+          nullable: true
+        uvm:
+          type: boolean
+          nullable: true
+        devicePubKey:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsDevicePublicKeyInputs'
+        credProps:
+          type: boolean
+          nullable: true
+        prf:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsPRFInputs'
+      additionalProperties: false
+    AuthenticationExtensionsDevicePublicKeyInputs:
+      type: object
+      properties:
+        attestation:
+          type: string
+          nullable: true
+        attestationFormats:
+          type: array
+          nullable: true
+          items:
+            type: string
+      additionalProperties: false
+    AuthenticationExtensionsPRFInputs:
+      type: object
+      properties:
+        eval:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsPRFValues'
+        evalByCredential:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/KeyValuePairOfStringAndAuthenticationExtensionsPRFValues'
+      additionalProperties: false
+    AuthenticationExtensionsPRFValues:
+      type: object
+      properties:
+        first:
+          type: string
+          format: byte
+          nullable: true
+        second:
+          type: string
+          format: byte
+          nullable: true
+      additionalProperties: false
+    KeyValuePairOfStringAndAuthenticationExtensionsPRFValues:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          $ref: '#/components/schemas/AuthenticationExtensionsPRFValues'
+      additionalProperties: false
+    Fido2ResponseBase:
+      type: object
+      properties:
+        status:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+      additionalProperties: false
+      x-abstract: true
+    MakeCredentialOptionsModel:
+      type: object
+      properties:
+        username:
+          type: string
+        displayName:
+          type: string
+        attType:
+          type: string
+        authType:
+          type: string
+        residentKey:
+          type: string
+        userVerification:
+          type: string
+      additionalProperties: false
+    AuthenticatorAttestationRawResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: byte
+          nullable: true
+        rawId:
+          type: string
+          format: byte
+          nullable: true
+        type:
+          $ref: '#/components/schemas/PublicKeyCredentialType'
+        response:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ResponseData'
+        extensions:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsClientOutputs'
+      additionalProperties: false
+    ResponseData:
+      type: object
+      properties:
+        attestationObject:
+          type: string
+          format: byte
+          nullable: true
+        clientDataJSON:
+          type: string
+          format: byte
+          nullable: true
+      additionalProperties: false
+    AuthenticationExtensionsClientOutputs:
+      type: object
+      properties:
+        example.extension.bool:
+          nullable: true
+        appid:
+          type: boolean
+        authnSel:
+          type: boolean
+        exts:
+          type: array
+          nullable: true
+          items:
+            type: string
+        uvm:
+          type: array
+          nullable: true
+          items:
+            type: array
+            items:
+              type: integer
+              format: int64
+        devicePubKey:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsDevicePublicKeyOutputs'
+        credProps:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/CredentialPropertiesOutput'
+        prf:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsPRFOutputs'
+      additionalProperties: false
+    AuthenticationExtensionsDevicePublicKeyOutputs:
+      type: object
+      properties:
+        authenticatorOutput:
+          type: string
+          format: byte
+        signature:
+          type: string
+          format: byte
+      additionalProperties: false
+    CredentialPropertiesOutput:
+      type: object
+      properties:
+        rk:
+          type: boolean
+      additionalProperties: false
+    AuthenticationExtensionsPRFOutputs:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        results:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsPRFValues'
+      additionalProperties: false
+    AssertionOptionsResponse:
+      type: object
+      properties:
+        fidoAssertionOptions:
+          $ref: '#/components/schemas/AssertionOptions'
+        currentRound:
+          type: integer
+          format: int64
+      additionalProperties: false
+    AssertionOptions:
+      allOf:
+      - $ref: '#/components/schemas/Fido2ResponseBase'
+      - type: object
+        properties:
+          challenge:
+            type: string
+            format: byte
+            nullable: true
+          timeout:
+            type: integer
+          rpId:
+            type: string
+            nullable: true
+          allowCredentials:
+            type: array
+            nullable: true
+            items:
+              $ref: '#/components/schemas/PublicKeyCredentialDescriptor'
+          userVerification:
+            nullable: true
+            oneOf:
+            - $ref: '#/components/schemas/UserVerificationRequirement'
+          extensions:
+            nullable: true
+            oneOf:
+            - $ref: '#/components/schemas/AuthenticationExtensionsClientInputs'
+        additionalProperties: false
+    AssertionOptionsPostModel:
+      type: object
+      properties:
+        username:
+          type: string
+        userVerification:
+          type: string
+      additionalProperties: false
+    AuthenticatorAssertionRawResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: byte
+          nullable: true
+        rawId:
+          type: string
+          format: byte
+          nullable: true
+        response:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AssertionResponse'
+        type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PublicKeyCredentialType'
+        extensions:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/AuthenticationExtensionsClientOutputs'
+      additionalProperties: false
+    AssertionResponse:
+      type: object
+      properties:
+        authenticatorData:
+          type: string
+          format: byte
+          nullable: true
+        signature:
+          type: string
+          format: byte
+          nullable: true
+        clientDataJSON:
+          type: string
+          format: byte
+          nullable: true
+        userHandle:
+          type: string
+          format: byte
+          nullable: true
+        attestationObject:
+          type: string
+          format: byte
+          nullable: true
+      additionalProperties: false
+x-generator: NSwag v13.19.0.0 (NJsonSchema v10.9.0.0 (Newtonsoft.Json v13.0.0.0))

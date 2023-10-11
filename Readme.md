@@ -9,12 +9,16 @@ This project is an implementation of a FIDO2 Relying Party, utilizing the FIDO2 
 - **POST /assertionOptions**: Generate assertion options for authentication
 - **POST /makeAssertion**: Authenticate a user
 
-## OpenAPI Client Generation
-
-Generate the client in the language of choice, with the openapi-generator. It's based on the openapi.yaml file in the root of the project.
+## OpenAPI.yaml schema generation
 
 ```sh
-java -jar openapi-generator-cli.jar generate -i openapi.yaml -g typescript-axios -o ./KeypartyClient 
+java -jar swagger-codegen-cli.jar generate -i swagger.json -l openapi-yaml -o ./RelyingParty/wwwroot
+```
+
+## OpenAPI Client Generation
+
+```sh
+java -jar openapi-generator-cli.jar generate -i ./RelyingParty/wwwroot/openapi.yaml -g typescript-axios -o ./tmp/KeypartyClient 
 ```
 
 ## Getting Started
