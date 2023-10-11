@@ -141,7 +141,7 @@ public class TxSigningController : Controller
 
     [HttpPost]
     [Route("/makeCredential")]
-    public async Task<JsonResult> MakeCredential(string username,
+    public async Task<MakeCredentialResponse> MakeCredential(string username,
         [FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
     {
         try
@@ -229,17 +229,17 @@ public class TxSigningController : Controller
                 LogicSignatureProgram = null
             };
 
-            return Json(response);
+            return response;
         }
         catch (Exception e)
         {
             _logger.LogError("Failed to make credential: {Exception}", e);
-            return Json(new MakeCredentialResponse()
+            return new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult =
                     new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
                 // LogicSignatureProgram = null
-            });
+            };
         }
     }
 
@@ -326,7 +326,7 @@ public class TxSigningController : Controller
 
             string sessionJsonString = _db.CreateJsonFromDictionary(sessionJson);
             await _db.UpdateUserJsonMetadata(assertionOptions.Username, sessionJsonString);
-            
+
             // 5. Return options to client
             return new AssertionOptionsResponse() { FidoAssertionOptions = options, CurrentRound = 0 };
         }
@@ -340,7 +340,7 @@ public class TxSigningController : Controller
 
     [HttpPost]
     [Route("/makeAssertionAndDelegateAccess")]
-    public async Task<JsonResult> MakeAssertionAndDelegateAccess(
+    public async Task<VerifyAssertionResult> MakeAssertionAndDelegateAccess(
         [FromBody] AuthenticatorAssertionRawResponse clientResponse,
         string username,
         CancellationToken cancellationToken
@@ -386,7 +386,7 @@ public class TxSigningController : Controller
             // 5. Make the assertion
             var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey,
                 creds.DevicePublicKeys, storedCounter, callback, cancellationToken);
-            
+
             // Extract the challenge and record it as their session token for access delegation.
             // Expiration dictated by challenge encoded DIDT token.
             byte[] didt = options.Challenge;
@@ -422,11 +422,11 @@ public class TxSigningController : Controller
             // send funding to the proxy
 
             // 7. return OK to client
-            return Json(res);
+            return res;
         }
         catch (Exception e)
         {
-            return Json(new VerifyAssertionResult { Status = "error", ErrorMessage = FormatException(e) });
+            return new VerifyAssertionResult { Status = "error", ErrorMessage = FormatException(e) };
         }
     }
 
