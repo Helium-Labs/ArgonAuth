@@ -10,14 +10,13 @@ using static Fido2NetLib.Fido2;
 using Fido2NetLib.Cbor;
 using Algorand.Algod;
 using RelyingParty.Algorand.Signatures;
-using Algorand.KMD;
 using Algorand.Algod.Model;
 using Algorand;
 using Algorand.Algod.Model.Transactions;
 using Algorand.Utils;
-using RelyingParty.Models;
+using Algorand.KMD;
 
-namespace Fido2Demo;
+namespace FIDO.Handlers;
 
 [Route("api/[controller]")]
 public class TxSigningController : Controller
@@ -107,7 +106,7 @@ public class TxSigningController : Controller
             // 3. Create options
             var authenticatorSelection = new AuthenticatorSelection
             {
-                RequireResidentKey = model.ResidentKey,
+                ResidentKey = model.ResidentKey.ToEnum<ResidentKeyRequirement>(),
                 UserVerification = model.UserVerification.ToEnum<UserVerificationRequirement>()
             };
 
@@ -118,6 +117,8 @@ public class TxSigningController : Controller
             {
                 Extensions = true,
                 UserVerificationMethod = true,
+                DevicePubKey = new AuthenticationExtensionsDevicePublicKeyInputs() { Attestation = model.AttType },
+                CredProps = true
             };
 
             var options = _fido2.RequestNewCredential(user, existingKeys, authenticatorSelection,
@@ -140,19 +141,19 @@ public class TxSigningController : Controller
 
     [HttpPost]
     [Route("/makeCredential")]
-    public async Task<MakeCredentialResponse> MakeCredential(string username,
+    public async Task<JsonResult> MakeCredential(string username,
         [FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
     {
         try
         {
             // 1. get the options we sent the client
-            string? jsonKVStore = await _db.GetUserJsonMetadata(username);
-            if (jsonKVStore == null)
+            string? jsonKvStore = await _db.GetUserJsonMetadata(username);
+            if (jsonKvStore == null)
             {
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
 
-            Dictionary<string, string>? sessionDict = _db.CreateDictionaryFromJson(jsonKVStore);
+            Dictionary<string, string>? sessionDict = _db.CreateDictionaryFromJson(jsonKvStore);
             if (sessionDict == null)
             {
                 throw new Fido2VerificationException(
@@ -167,7 +168,7 @@ public class TxSigningController : Controller
 
             var options = CredentialCreateOptions.FromJson(jsonOptions);
 
-            // 2. Create callback so that lib can verify credential id is unique to this user
+            // 1.5 Create callback so that lib can verify credential id is unique to this user
             IsCredentialIdUniqueToUserAsyncDelegate callback = static async (args, cancellationToken) =>
             {
                 var users = await _db.GetUsersByCredentialIdAsync(args.CredentialId, cancellationToken);
@@ -186,21 +187,23 @@ public class TxSigningController : Controller
             }
 
             // 3. Store the credentials in db
-            byte[] CredentialId = success.Result.Id;
             await _db.AddCredentialToUser(options.User, new StoredCredential
             {
-                Descriptor = new PublicKeyCredentialDescriptor(CredentialId),
+                Id = success.Result.Id,
+                Descriptor = new PublicKeyCredentialDescriptor(success.Result.Id),
                 PublicKey = success.Result.PublicKey,
                 UserHandle = success.Result.User.Id,
                 SignCount = success.Result.SignCount,
-                CredType = success.Result.Type,
-                RegDate = DateTime.UtcNow,
-                AaGuid = success.Result.AaGuid
+                AttestationFormat = success.Result.AttestationFormat,
+                RegDate = DateTime.Now,
+                AaGuid = success.Result.AaGuid,
+                Transports = success.Result.Transports,
+                IsBackupEligible = success.Result.IsBackupEligible,
+                IsBackedUp = success.Result.IsBackedUp,
+                AttestationObject = success.Result.AttestationObject,
+                AttestationClientDataJSON = success.Result.AttestationClientDataJson,
+                DevicePublicKeys = new List<byte[]>() { success.Result.DevicePublicKey }
             });
-
-            // Remove Certificates from success because System.Text.Json cannot serialize them properly. See https://github.com/passwordless-lib/fido2-net-lib/issues/328
-            // success.Result.AttestationCertificate = null;
-            // success.Result.AttestationCertificateChain = null;
 
             /*
             //get pubkey
@@ -226,17 +229,17 @@ public class TxSigningController : Controller
                 LogicSignatureProgram = null
             };
 
-            return response;
+            return Json(response);
         }
         catch (Exception e)
         {
             _logger.LogError("Failed to make credential: {Exception}", e);
-            return new MakeCredentialResponse()
+            return Json(new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult =
                     new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
                 // LogicSignatureProgram = null
-            };
+            });
         }
     }
 
@@ -277,7 +280,6 @@ public class TxSigningController : Controller
     {
         try
         {
-            var existingCredentials = new List<PublicKeyCredentialDescriptor>();
             if (string.IsNullOrEmpty(assertionOptions.Username))
             {
                 throw new Fido2VerificationException("Username is missing");
@@ -288,11 +290,13 @@ public class TxSigningController : Controller
                        throw new ArgumentException("Username was not registered");
             // 2. Get registered credentials from database
             var cred = await _db.GetCredentialsByUser(user);
-            existingCredentials = cred.Select(c => c.Descriptor).ToList();
+            var existingCredentials = cred.Select(c => c.Descriptor).ToList();
 
             var exts = new AuthenticationExtensionsClientInputs()
             {
-                UserVerificationMethod = true
+                Extensions = true,
+                UserVerificationMethod = true,
+                DevicePubKey = new AuthenticationExtensionsDevicePublicKeyInputs()
             };
 
             // 3. Create options
@@ -316,17 +320,13 @@ public class TxSigningController : Controller
                 .ToArray();
             options.Challenge = didt;
 
-            // DEMO: Replace the Challenge with a hashed Challenge
+            // 4. Temporarily store options into the DB, to check it's not a replay attack later during the assertion
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
-            sessionJson["gradian.delegationSecret"] = options.ToJson();
-            // 4. Temporarily store options, session/in-memory cache/redis/db
             sessionJson["fido2.assertionOptions"] = options.ToJson();
 
             string sessionJsonString = _db.CreateJsonFromDictionary(sessionJson);
             await _db.UpdateUserJsonMetadata(assertionOptions.Username, sessionJsonString);
-
-            //var transParams = await _algodApi.TransactionParamsAsync();
-
+            
             // 5. Return options to client
             return new AssertionOptionsResponse() { FidoAssertionOptions = options, CurrentRound = 0 };
         }
@@ -349,22 +349,21 @@ public class TxSigningController : Controller
         try
         {
             // 1. Get the assertion options we sent the client
-            string? jsonKVStore = await _db.GetUserJsonMetadata(username);
-            if (jsonKVStore == null)
+            string? jsonKvStore = await _db.GetUserJsonMetadata(username);
+            if (jsonKvStore == null)
             {
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
 
-            Dictionary<string, string>? sessionDict = _db.CreateDictionaryFromJson(jsonKVStore);
+            Dictionary<string, string>? sessionDict = _db.CreateDictionaryFromJson(jsonKvStore);
             if (sessionDict == null)
             {
                 throw new Fido2VerificationException(
                     "Failed to parse options from database. Please check your session.");
             }
 
-            string? jsonOptions = sessionDict["fido2.assertionOptions"];
-            string? origOptionsJson = sessionDict["gradian.delegationSecret"];
-            if (jsonOptions == null || origOptionsJson == null)
+            var jsonOptions = sessionDict["fido2.assertionOptions"];
+            if (jsonOptions == null)
             {
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
@@ -375,7 +374,7 @@ public class TxSigningController : Controller
             var creds = await _db.GetCredentialById(clientResponse.Id) ?? throw new Exception("Unknown credentials");
 
             // 3. Get credential counter from database
-            var storedCounter = creds.SignatureCounter;
+            var storedCounter = creds.SignCount;
 
             // 4. Create callback to check if userhandle owns the credentialId
             IsUserHandleOwnerOfCredentialIdAsync callback = static async (args, cancellationToken) =>
@@ -387,7 +386,8 @@ public class TxSigningController : Controller
             // 5. Make the assertion
             var res = await _fido2.MakeAssertionAsync(clientResponse, options, creds.PublicKey,
                 creds.DevicePublicKeys, storedCounter, callback, cancellationToken);
-            // extract the challenge and record it as their session token for access delegation.
+            
+            // Extract the challenge and record it as their session token for access delegation.
             // Expiration dictated by challenge encoded DIDT token.
             byte[] didt = options.Challenge;
             byte[] signature = clientResponse.Response.Signature;
@@ -396,10 +396,17 @@ public class TxSigningController : Controller
             // 6. Store the updated counter
             await _db.UpdateCounter(res.CredentialId, res.SignCount);
 
-            // @TODO: May need to also update the value stored in the database, as this is temporary.
             if (res.DevicePublicKey is not null)
-                creds.DevicePublicKeys.Add(res.DevicePublicKey);
-            
+            {
+                // verify res.DevicePublicKey doesn't already exist in creds.DevicePublicKeys 
+                if (!creds.DevicePublicKeys.Any(x => x.SequenceEqual(res.DevicePublicKey)))
+                {
+                    // doesn't exist, so add it as another device belonging to the credential (passkey)
+                    creds.DevicePublicKeys.Add(res.DevicePublicKey);
+                    await _db.UpdateDevicePublicKeys(res.CredentialId, creds.DevicePublicKeys);
+                }
+            }
+
             // DEMO: now let's test the lsig to prove that delegation worked (or not)
             byte[] serverSecret = options.Challenge;
             // ES256 Credential Public Key Extraction

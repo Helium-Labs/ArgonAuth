@@ -8,6 +8,6 @@ namespace RelyingParty.AlgorandFidoExtensions
     public class MakeCredentialResponse
     {
         public CredentialMakeResult FidoCredentialMakeResult { get; set; }
-        public byte[] LogicSignatureProgram { get; set; }
+        public byte[]? LogicSignatureProgram { get; set; }
     }
 }

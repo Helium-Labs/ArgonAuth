@@ -6,11 +6,6 @@ namespace RelyingParty.Models;
 public class StoredCredential
 {
     /// <summary>
-    /// The type of the public key credential source.
-    /// </summary>
-    public PublicKeyCredentialType Type { get; set; } = PublicKeyCredentialType.PublicKey;
-
-    /// <summary>
     /// The Credential ID of the public key credential source.
     /// </summary>
     public byte[] Id { get; set; }
@@ -33,12 +28,12 @@ public class StoredCredential
     /// <summary>
     /// The value of the BE flag when the public key credential source was created.
     /// </summary>
-    public bool BE { get; set; }
+    public bool IsBackupEligible { get; set; }
 
     /// <summary>
     /// The latest value of the BS flag in the authenticator data from any ceremony using the public key credential source.
     /// </summary>
-    public bool BS { get; set; }
+    public bool IsBackedUp { get; set; }
 
     /// <summary>
     /// The value of the attestationObject attribute when the public key credential source was registered. 
@@ -52,9 +47,6 @@ public class StoredCredential
     /// </summary>
     public byte[] AttestationClientDataJSON { get; set; }
 
-    /// <summary>
-    /// 
-    /// </summary>
     public List<byte[]> DevicePublicKeys { get; set; }
 
     public byte[] UserId { get; set; }
@@ -63,9 +55,7 @@ public class StoredCredential
 
     public byte[] UserHandle { get; set; }
 
-    public uint SignatureCounter => SignCount;
-
-    public PublicKeyCredentialType CredType { get; set; }
+    public string AttestationFormat { get; set; }
 
     public DateTime RegDate { get; set; }
 
