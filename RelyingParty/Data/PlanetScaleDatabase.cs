@@ -9,65 +9,60 @@ using RelyingParty.Models;
 
 public class PlanetScaleDatabase
 {
-    private MySqlConnection _conn;
     private readonly string _connectionString;
 
     public PlanetScaleDatabase(string connectionString)
     {
-        _conn = new MySqlConnection(connectionString);
         _connectionString = connectionString;
     }
 
-    public async Task<MySqlConnection> GetMySqlConnection(CancellationToken cancellationToken = default)
+    private async Task<MySqlConnection> GetMySqlConnection(CancellationToken cancellationToken = default)
     {
-        _conn ??= new MySqlConnection(_connectionString);
-        if (_conn.State != ConnectionState.Open)
-        {
-            // it's not open yet, so open it. Don't open a connection that's already open.
-            await _conn.OpenAsync(cancellationToken);
-        }
-
-        return _conn;
+        var conn = new MySqlConnection(_connectionString);
+        await conn.OpenAsync(cancellationToken);
+        return conn;
     }
 
     public async Task<Fido2User> GetOrAddUser(string username, Func<Fido2User> createUserFunc)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
+        Fido2User user;
 
         // Read and return the user if it already exists
-        await using var selectCmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", conn);
-        selectCmd.Parameters.AddWithValue("@username", username);
-        await using var reader = selectCmd.ExecuteReader();
-        if (reader.Read())
+        await using (var selectCmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", conn))
         {
-            var existingUser = new Fido2User
+            selectCmd.Parameters.AddWithValue("@username", username);
+            await using var reader = await selectCmd.ExecuteReaderAsync();
+        
+            if (reader.Read())
             {
-                DisplayName = reader.GetString("display_name"),
-                Name = reader.GetString("username"),
-                Id = (byte[])reader["user_id"]
-            };
-
-            await conn.CloseAsync();
-            return existingUser;
-        }
+                user = new Fido2User
+                {
+                    DisplayName = reader.GetString("display_name"),
+                    Name = reader.GetString("username"),
+                    Id = (byte[])reader["user_id"]
+                };
+                return user;
+            }
+        } // The reader will be disposed of here
 
         // user does not exist. Create it and return it
-        Fido2User newUser = createUserFunc();
+        user = createUserFunc();
         await using var insertCmd = new MySqlCommand(
             "INSERT INTO users (username, display_name, user_id) VALUES (@username, @display_name, @user_id)",
             conn);
-        insertCmd.Parameters.AddWithValue("@username", newUser.Name);
-        insertCmd.Parameters.AddWithValue("@display_name", newUser.DisplayName);
-        insertCmd.Parameters.AddWithValue("@user_id", newUser.Id);
-        insertCmd.ExecuteNonQuery();
+        insertCmd.Parameters.AddWithValue("@username", user.Name);
+        insertCmd.Parameters.AddWithValue("@display_name", user.DisplayName);
+        insertCmd.Parameters.AddWithValue("@user_id", user.Id);
+        await insertCmd.ExecuteNonQueryAsync();
 
-        await conn.CloseAsync();
-        return newUser;
+        return user;
     }
+
 
     public async Task UpdateUserJsonMetadata(string username, string newJsonMetadata)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         // Create the command to update the user's json_metadata
         await using var cmd = new MySqlCommand(
@@ -77,16 +72,14 @@ public class PlanetScaleDatabase
         cmd.Parameters.AddWithValue("@json_metadata", newJsonMetadata);
 
         // Execute the command
-        cmd.ExecuteNonQuery();
-
-        await conn.CloseAsync();
+        await cmd.ExecuteNonQueryAsync();
     }
 
     public async Task<List<StoredCredential>> GetCredentialsByUser(Fido2User user)
     {
         var credentials = new List<StoredCredential>();
 
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         await using var cmd = new MySqlCommand("SELECT * FROM credentials WHERE user_handle = @user_handle", conn);
         cmd.Parameters.AddWithValue("@user_handle", user.Id); // Using user_handle instead of user_id
@@ -127,7 +120,7 @@ public class PlanetScaleDatabase
             });
         }
 
-        await conn.CloseAsync();
+
         return credentials;
     }
 
@@ -154,7 +147,7 @@ public class PlanetScaleDatabase
             });
         }
 
-        await conn.CloseAsync();
+
         return users;
     }
 
@@ -198,7 +191,7 @@ public class PlanetScaleDatabase
 
     public async Task AddCredentialToUser(Fido2User user, StoredCredential storedCredential)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         await using var cmd = new MySqlCommand(@"INSERT INTO credentials 
     (credential_id, public_key, sign_count, transports, is_backup_eligible, is_backed_up, attestation_object, attestation_client_data_json, descriptor_type, descriptor_id, user_handle, attestation_format, reg_date, aa_guid) 
@@ -226,14 +219,12 @@ public class PlanetScaleDatabase
         cmd.Parameters.AddWithValue("@reg_date", storedCredential.RegDate);
         cmd.Parameters.AddWithValue("@aa_guid", storedCredential.AaGuid.ToByteArray());
 
-        cmd.ExecuteNonQuery();
-
-        await conn.CloseAsync();
+        await cmd.ExecuteNonQueryAsync();
     }
 
     public async Task<Fido2User?> GetUser(string username)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         await using var cmd = new MySqlCommand("SELECT * FROM users WHERE username = @username", conn);
         cmd.Parameters.AddWithValue("@username", username);
@@ -246,17 +237,17 @@ public class PlanetScaleDatabase
                 Name = reader.GetString("username"),
                 Id = (byte[])reader["user_id"]
             };
-            await conn.CloseAsync();
+
             return user;
         }
 
-        await conn.CloseAsync();
+
         return null;
     }
 
     public async Task<string?> GetUserJsonMetadata(string username)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         // Create the command to get the user's json_metadata
         await using var cmd = new MySqlCommand("SELECT json_metadata FROM users WHERE username = @username", conn);
@@ -267,11 +258,11 @@ public class PlanetScaleDatabase
         {
             // Get the json_metadata field as a string
             var result = reader.GetString("json_metadata");
-            await conn.CloseAsync();
+
             return result;
         }
 
-        await conn.CloseAsync();
+
         // User not found
         return null;
     }
@@ -279,7 +270,7 @@ public class PlanetScaleDatabase
 
     public async Task<StoredCredential?> GetCredentialById(byte[] id)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         await using var cmd = new MySqlCommand("SELECT * FROM credentials WHERE credential_id = @credential_id", conn);
         cmd.Parameters.AddWithValue("@credential_id", id);
@@ -319,7 +310,6 @@ public class PlanetScaleDatabase
             };
         }
 
-        await conn.CloseAsync();
 
         return null;
     }
@@ -368,34 +358,30 @@ public class PlanetScaleDatabase
             });
         }
 
-        await conn.CloseAsync();
 
         return credentials;
     }
 
     public async Task UpdateCounter(byte[] credentialId, uint counter)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         await using var cmd = new MySqlCommand(
             "UPDATE credentials SET sign_count = @counter WHERE credential_id = @credential_id", conn);
         cmd.Parameters.AddWithValue("@counter", counter);
         cmd.Parameters.AddWithValue("@credential_id", credentialId);
         await cmd.ExecuteNonQueryAsync();
-
-        await conn.CloseAsync();
     }
 
     public async Task UpdateDevicePublicKeys(byte[] credentialId, List<byte[]> newDevicePublicKeys)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
         await using var cmd = new MySqlCommand(
             "UPDATE credentials SET device_public_keys = @device_public_keys WHERE credential_id = @credential_id",
             conn);
         cmd.Parameters.AddWithValue("@device_public_keys", JsonConvert.SerializeObject(newDevicePublicKeys));
         cmd.Parameters.AddWithValue("@credential_id", credentialId);
         await cmd.ExecuteNonQueryAsync();
-        await conn.CloseAsync();
     }
 
     // update the table didt, with the new value of the DIDT public key.
@@ -403,7 +389,7 @@ public class PlanetScaleDatabase
     // and didt is the DIDT public key. Key is the user_id.
     public async Task UpsertDidt(byte[] credential_id, byte[] didt, byte[] signature)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         await using var cmd = new MySqlCommand(
             "INSERT INTO DIDT (credential_id, didt, signature) VALUES (@credential_id, @didt, @signature) ON DUPLICATE KEY UPDATE didt = @didt, signature = @signature",
@@ -412,14 +398,12 @@ public class PlanetScaleDatabase
         cmd.Parameters.AddWithValue("@didt", didt);
         cmd.Parameters.AddWithValue("@signature", signature);
         await cmd.ExecuteNonQueryAsync();
-
-        await conn.CloseAsync();
     }
 
     // select the Didt where the user_id is the user's ID.
     public async Task<LSIGSign.Models.SignedDidt?> GetSignedDidt(byte[] credentialId)
     {
-        var conn = await GetMySqlConnection();
+        await using var conn = await GetMySqlConnection();
 
         await using var cmd = new MySqlCommand("SELECT * FROM DIDT WHERE credential_id = @credential_id", conn);
         cmd.Parameters.AddWithValue("@credential_id", credentialId);
@@ -432,7 +416,6 @@ public class PlanetScaleDatabase
             return signedDidt;
         }
 
-        await conn.CloseAsync();
         return null;
     }
 }

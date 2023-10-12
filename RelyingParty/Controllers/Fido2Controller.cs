@@ -19,7 +19,7 @@ using Algorand.KMD;
 namespace FIDO.Handlers;
 
 [Route("api/[controller]")]
-public class TxSigningController : Controller
+public class FidoController : Controller
 {
     private IFido2 _fido2;
     private IMasterAccount _serverAccount;
@@ -37,7 +37,7 @@ public class TxSigningController : Controller
 
     private readonly ILogger _logger;
 
-    public TxSigningController(ILogger<TxSigningController> logger, IFido2 fido2, IMasterAccount serverAccount,
+    public FidoController(ILogger<FidoController> logger, IFido2 fido2, IMasterAccount serverAccount,
         IDefaultApi algod, IApi kmdApi,
         PlanetScaleDatabase database)
     {
@@ -90,7 +90,7 @@ public class TxSigningController : Controller
             {
                 model.Username = $"{model.DisplayName} (Usernameless user created at {DateTime.UtcNow})";
             }
-
+            
             // 1. Get user from DB by username (in our example, auto create missing users)
             var user = await _db.GetOrAddUser(model.Username, () => new Fido2User
             {
@@ -98,7 +98,7 @@ public class TxSigningController : Controller
                 Name = model.Username,
                 Id = Encoding.UTF8.GetBytes(model.Username) // byte representation of userID is required
             });
-
+            
             // 2. Get user existing keys by username
             var cred = await _db.GetCredentialsByUser(user);
             var existingKeys = cred.Select(c => c.Descriptor).ToList();
