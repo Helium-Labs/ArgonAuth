@@ -19,10 +19,23 @@ namespace RelyingParty.Models
         public string ResidentKey { get; set; }
         public string UserVerification { get; set; }
     }
-    
+
     public class AssertionResponseModel : Fido2ResponseBase
     {
         public VerifyAssertionResult VerifyAssertionResult { get; set; }
         public string dwtBearerToken { get; set; }
+    }
+
+    public class MakeAssertionRequestModel : Fido2ResponseBase
+    {
+        public AuthenticatorAssertionRawResponse clientResponse { get; set; }
+        public string username { get; set; }
+        public DWT dwt { get; set; }
+    }
+
+    public class MakeCredentialsRequestModel : Fido2ResponseBase
+    {
+        public string username { get; set; }
+        public AuthenticatorAttestationRawResponse attestationResponse { get; set; }
     }
 }

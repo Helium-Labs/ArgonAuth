@@ -5,6 +5,7 @@ using RelyingParty.Algorand.ServerAccount;
 using RelyingParty.AlgorandFidoExtensions;
 using RelyingParty.Models;
 using System.Text;
+using System.Text.Json;
 using AlgoStudio.Clients;
 using static Fido2NetLib.Fido2;
 using Fido2NetLib.Cbor;
@@ -142,11 +143,15 @@ public class FidoController : Controller
 
     [HttpPost]
     [Route("/makeCredential")]
-    public async Task<MakeCredentialResponse> MakeCredential(string username,
-        [FromBody] AuthenticatorAttestationRawResponse attestationResponse, CancellationToken cancellationToken)
+    public async Task<MakeCredentialResponse> MakeCredential(
+        [FromBody] MakeCredentialsRequestModel credentialsRequestBody,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
+            var username = credentialsRequestBody.username;
+            var attestationResponse = credentialsRequestBody.attestationResponse;
             // 1. get the options we sent the client
             string? jsonKvStore = await _db.GetUserJsonMetadata(username);
             if (jsonKvStore == null)
@@ -205,24 +210,6 @@ public class FidoController : Controller
                 AttestationClientDataJSON = success.Result.AttestationClientDataJson,
                 DevicePublicKeys = new List<byte[]>() { success.Result.DevicePublicKey }
             });
-
-            /*
-            //get pubkey
-            var decodedPubKey = (CborMap)CborObject.Decode(success.Result.PublicKey);
-            byte[] pubkeyX = (byte[])decodedPubKey.GetValue(-2);
-            byte[] pubkeyY = (byte[])decodedPubKey.GetValue(-3);
-
-            //Modify our logic signature
-            var lsig = new AccountGameWallet(pubkeyX, pubkeyY);
-
-            //Compile it
-            //TODO - compile should accept IDefaultApi and IDefaultApi should have a meaningful name that doesnt rely on its namespace
-            var lsigCompiled = await lsig.Compile((DefaultApi)_algodApi);
-
-            // DEMO CODE
-            await SetUpAccounts();
-            await preFundLsig(lsigCompiled);
-            */
 
             MakeCredentialResponse response = new MakeCredentialResponse()
             {
@@ -338,14 +325,19 @@ public class FidoController : Controller
     [HttpPost]
     [Route("/makeAssertion")]
     public async Task<AssertionResponseModel> MakeAssertion(
-        [FromBody] AuthenticatorAssertionRawResponse clientResponse,
-        string username,
-        DWT dwt,
+        [FromBody] MakeAssertionRequestModel makeAssertionRequestBody,
         CancellationToken cancellationToken
     )
     {
         try
         {
+            var clientResponse = makeAssertionRequestBody.clientResponse;
+            var username = makeAssertionRequestBody.username;
+            var dwt = makeAssertionRequestBody.dwt;
+            // Serialize makeAssertionRequestBody to JSON string and log to console
+            string json = JsonSerializer.Serialize(makeAssertionRequestBody);
+
+            Console.WriteLine(json);
             // 1. Get the assertion options we sent the client
             string? jsonKvStore = await _db.GetUserJsonMetadata(username);
             if (jsonKvStore == null)
@@ -410,7 +402,7 @@ public class FidoController : Controller
 
             if (res.DevicePublicKey is not null)
             {
-                // verify res.DevicePublicKey doesn't already exist in creds.DevicePublicKeys 
+                // verify res.DevicePublicKey doesn't already exist in creds.DevicePublicKeys
                 if (!creds.DevicePublicKeys.Any(x => x.SequenceEqual(res.DevicePublicKey)))
                 {
                     // doesn't exist, so add it as another device belonging to the credential (passkey)

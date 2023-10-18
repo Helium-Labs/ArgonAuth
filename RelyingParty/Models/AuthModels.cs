@@ -62,6 +62,11 @@ public class DWT
         // Generate random 32 byte nonce
         rand = UtilityMethods.GenerateSecureNonce(32);
     }
+    
+    public DWT()
+    {
+        // Parameterless constructor
+    }
 
     // B64 Sha256 Hash of the JWT, in a reproducible way.
     public byte[] Hash()
@@ -106,6 +111,7 @@ public class DWT
     // To JSON B64 encoded string, for transport in the bearer header.
     public string ToJsonB64()
     {
+        return "";
         var json = JsonSerializer.Serialize(this);
         return UtilityMethods.ToBase64String(Encoding.UTF8.GetBytes(json));
     }

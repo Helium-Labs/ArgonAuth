@@ -1,4 +1,5 @@
 using System.Data;
+using System.Text;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using MySql.Data.MySqlClient;
@@ -33,7 +34,7 @@ public class PlanetScaleDatabase
         {
             selectCmd.Parameters.AddWithValue("@username", username);
             await using var reader = await selectCmd.ExecuteReaderAsync();
-        
+
             if (reader.Read())
             {
                 user = new Fido2User
@@ -267,11 +268,29 @@ public class PlanetScaleDatabase
         return null;
     }
 
+    public static bool IsValidUtf8(byte[] data)
+    {
+        try
+        {
+            // Attempt to decode the byte array
+            Encoding.UTF8.GetString(data);
+
+            // If decoding succeeded without an exception, the data is valid UTF-8
+            return true;
+        }
+        catch (DecoderFallbackException)
+        {
+            // If a DecoderFallbackException was thrown, the data is not valid UTF-8
+            return false;
+        }
+    }
 
     public async Task<StoredCredential?> GetCredentialById(byte[] id)
     {
         await using var conn = await GetMySqlConnection();
-
+        // log id to console as BASE64 string
+        Console.WriteLine("id: " + Convert.ToBase64String(id));
+        Console.WriteLine("Is Valid UTF8: " + IsValidUtf8(id));
         await using var cmd = new MySqlCommand("SELECT * FROM credentials WHERE credential_id = @credential_id", conn);
         cmd.Parameters.AddWithValue("@credential_id", id);
         await using var reader = cmd.ExecuteReader();

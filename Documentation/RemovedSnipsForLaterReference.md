@@ -25,4 +25,25 @@
     // byte[] didt = options.Challenge;
     // byte[] signature = clientResponse.Response.Signature;
     // await _db.UpsertDidt(clientResponse.Id, didt, signature);
+    
+    
+    
+    // Later credentials
+    /*
+    //get pubkey
+    var decodedPubKey = (CborMap)CborObject.Decode(success.Result.PublicKey);
+    byte[] pubkeyX = (byte[])decodedPubKey.GetValue(-2);
+    byte[] pubkeyY = (byte[])decodedPubKey.GetValue(-3);
+
+    //Modify our logic signature
+    var lsig = new AccountGameWallet(pubkeyX, pubkeyY);
+
+    //Compile it
+    //TODO - compile should accept IDefaultApi and IDefaultApi should have a meaningful name that doesnt rely on its namespace
+    var lsigCompiled = await lsig.Compile((DefaultApi)_algodApi);
+
+    // DEMO CODE
+    await SetUpAccounts();
+    await preFundLsig(lsigCompiled);
+    */
 ```
