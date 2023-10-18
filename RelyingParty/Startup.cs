@@ -1,13 +1,9 @@
 using Algorand.Algod;
 using Algorand;
-using Fido2NetLib.Objects;
 using RelyingParty.Algorand.ServerAccount;
-using RelyingParty.OpenAPI;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using Algorand.KMD;
 using Microsoft.AspNetCore.StaticFiles;
-using Swashbuckle.AspNetCore.SwaggerUI;
 
 namespace RelyingParty;
 
@@ -138,18 +134,6 @@ public class Startup
 
         app.UseAuthorization();
 
-        var contentTypeProvider = new FileExtensionContentTypeProvider();
-        contentTypeProvider.Mappings[".yaml"] = "application/x-yaml";
-        contentTypeProvider.Mappings[".yml"] = "application/x-yaml";
-
-        app.UseStaticFiles(new StaticFileOptions
-        {
-            // we need to serve unknown file types,
-            // or pass in a non-default content type provider
-
-            //ServeUnknownFileTypes = true, // could be an option, but opens things up more than needed
-            ContentTypeProvider = contentTypeProvider
-        });
 
         app.UseEndpoints(endpoints =>
         {
@@ -159,21 +143,9 @@ public class Startup
                 {
                     await context.Response.WriteAsync("Welcome to running ASP.NET Core on AWS Lambda");
                 });
-            endpoints.MapPost("/test", async context =>
-            {
-                using var reader = new StreamReader(context.Request.Body);
-                string requestBody = await reader.ReadToEndAsync();
-
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(requestBody);
-            });
         });
 
         app.UseOpenApi();
-        app.UseSwaggerUI(options =>
-        {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Swagger");
-            options.SwaggerEndpoint("/openapi.yaml", "OpenAPI");
-        });
+        app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v1/swagger.json", "Swagger"); });
     }
 }
