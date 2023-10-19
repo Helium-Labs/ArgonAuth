@@ -62,7 +62,7 @@ public class DWT
         // Generate random 32 byte nonce
         rand = UtilityMethods.GenerateSecureNonce(32);
     }
-    
+
     public DWT()
     {
         // Parameterless constructor
@@ -86,7 +86,7 @@ public class DWT
     {
         rpSig = signature;
     }
-    
+
     // Verify if this DWT (its hash) has been signed by the RP and CSPK
     public bool IsValid()
     {
@@ -94,7 +94,7 @@ public class DWT
         var cspkSigned = CryptoHelper.Ed25519Verify(cspk, hash, cspkSig);
         return rpSigned && cspkSigned;
     }
-    
+
     // From JSON Base64 encoded string, for transport in the bearer header.
     public static DWT FromJson(string jsonB64)
     {
@@ -107,7 +107,7 @@ public class DWT
 
         return result;
     }
-    
+
     // To JSON B64 encoded string, for transport in the bearer header.
     public string ToJsonB64()
     {
