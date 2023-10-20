@@ -12,6 +12,7 @@ using Algorand.Utils;
 using LSIGSign.Models;
 using RelyingParty.Utilities;
 using Proxies;
+using RelyingParty.Data;
 using RelyingParty.Models;
 
 namespace LSIGSign.Handlers;

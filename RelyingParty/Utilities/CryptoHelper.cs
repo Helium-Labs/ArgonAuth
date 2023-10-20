@@ -2,6 +2,7 @@
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
+using Org.BouncyCastle.Security;
 
 namespace RelyingParty.Utilities;
 
@@ -26,21 +27,21 @@ public static class CryptoHelper
         X25519KeyPairGenerator gen = new X25519KeyPairGenerator();
         return gen.GenerateKeyPair();
     }
-    
+
     // Verify the master key signed the given data
     public static bool VerifyMasterKeySignedData(byte[] data, byte[] signature)
     {
         AsymmetricCipherKeyPair masterKeyPair = GenerateMasterKeyPair();
         return Ed25519Verify(masterKeyPair.Public, data, signature);
     }
-    
+
     // Sign with the master key signed the given data
     public static byte[] Ed25519SignWithMasterKey(byte[] data)
     {
         AsymmetricCipherKeyPair masterKeyPair = GenerateMasterKeyPair();
-        return Ed25519Sign(masterKeyPair.Public, data);
+        return Ed25519Sign(masterKeyPair.Private, data);
     }
-    
+
     // sign
     public static byte[] Ed25519Sign(AsymmetricKeyParameter privateKey, byte[] data)
     {
@@ -58,11 +59,11 @@ public static class CryptoHelper
         signer.BlockUpdate(data, 0, data.Length);
         return signer.VerifySignature(signature);
     }
-    
+
     public static bool Ed25519Verify(byte[] publicKey, byte[] data, byte[] signature)
     {
+        AsymmetricKeyParameter publicKeyParameter = new Ed25519PublicKeyParameters(publicKey);
         Ed25519Signer signer = new Ed25519Signer();
-        AsymmetricKeyParameter publicKeyParameter = new Ed25519PublicKeyParameters(publicKey, 0);
         signer.Init(false, publicKeyParameter);
         signer.BlockUpdate(data, 0, data.Length);
         return signer.VerifySignature(signature);

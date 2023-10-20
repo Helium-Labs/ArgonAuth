@@ -4,6 +4,7 @@ using RelyingParty.Algorand.ServerAccount;
 using System.Text.Json.Serialization;
 using Algorand.KMD;
 using Microsoft.AspNetCore.StaticFiles;
+using RelyingParty.Data;
 
 namespace RelyingParty;
 

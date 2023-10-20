@@ -16,6 +16,7 @@ using Algorand;
 using Algorand.Algod.Model.Transactions;
 using Algorand.Utils;
 using Algorand.KMD;
+using RelyingParty.Data;
 using RelyingParty.Utilities;
 
 namespace FIDO.Handlers;
@@ -84,7 +85,8 @@ public class FidoController : Controller
 
     [HttpPost]
     [Route("/makeCredentialOptions")]
-    public async Task<CredentialCreateOptions> MakeCredentialOptions([FromBody] MakeCredentialOptionsModel model)
+    public async Task<CredentialCreateOptions> MakeCredentialOptions([FromBody] MakeCredentialOptionsModel model,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -96,13 +98,13 @@ public class FidoController : Controller
             // 1. Get user from DB by username (in our example, auto create missing users)
             var user = await _db.GetOrAddUser(model.Username, () => new Fido2User
             {
-                DisplayName = model.DisplayName,
+                DisplayName = model.Username,
                 Name = model.Username,
                 Id = Encoding.UTF8.GetBytes(model.Username) // byte representation of userID is required
             });
 
             // 2. Get user existing keys by username
-            var cred = await _db.GetCredentialsByUser(user);
+            var cred = await _db.GetCredentialsByUser(user, cancellationToken);
             var existingKeys = cred.Select(c => c.Descriptor).ToList();
 
             // 3. Create options
@@ -120,12 +122,15 @@ public class FidoController : Controller
                 Extensions = true,
                 UserVerificationMethod = true,
                 DevicePubKey = new AuthenticationExtensionsDevicePublicKeyInputs() { Attestation = model.AttType },
-                CredProps = true
+                CredProps = true,
+                PRF = model.PRF
             };
 
             var options = _fido2.RequestNewCredential(user, existingKeys, authenticatorSelection,
                 model.AttType.ToEnum<AttestationConveyancePreference>(), exts);
+
             options.PubKeyCredParams = options.PubKeyCredParams.Where(o => o.Alg == COSE.Algorithm.ES256).ToList();
+
             // 4. Temporarily store options, session/in-memory cache/redis/db
             Dictionary<string, string> sessionJson = new Dictionary<string, string>();
             sessionJson["fido2.attestationOptions"] = options.ToJson();
@@ -172,7 +177,11 @@ public class FidoController : Controller
                 throw new Fido2VerificationException("No options found in database. Please check your session.");
             }
 
+            // Log the jsonOptions to console
+            Console.WriteLine("CredentialCreateOptions as JSON: " + jsonOptions);
             var options = CredentialCreateOptions.FromJson(jsonOptions);
+            // Check is PRF set
+            Console.WriteLine("options.Extensions.PRF is set: " + (options.Extensions.PRF != null));
 
             // 1.5 Create callback so that lib can verify credential id is unique to this user
             IsCredentialIdUniqueToUserAsyncDelegate callback = static async (args, cancellationToken) =>
@@ -193,7 +202,13 @@ public class FidoController : Controller
             }
 
             // 3. Store the credentials in db
-            await _db.AddCredentialToUser(options.User, new StoredCredential
+            var devicePublicKey = new List<byte[]>() { };
+            if (success.Result.DevicePublicKey != null)
+            {
+                devicePublicKey.Add(success.Result.DevicePublicKey);
+            }
+
+            await _db.AddCredentialToUser(new StoredCredential
             {
                 Id = success.Result.Id,
                 Descriptor = new PublicKeyCredentialDescriptor(success.Result.Id),
@@ -208,15 +223,13 @@ public class FidoController : Controller
                 IsBackedUp = success.Result.IsBackedUp,
                 AttestationObject = success.Result.AttestationObject,
                 AttestationClientDataJSON = success.Result.AttestationClientDataJson,
-                DevicePublicKeys = new List<byte[]>() { success.Result.DevicePublicKey }
+                DevicePublicKeys = devicePublicKey
             });
-
             MakeCredentialResponse response = new MakeCredentialResponse()
             {
                 FidoCredentialMakeResult = success,
                 LogicSignatureProgram = null
             };
-
             return response;
         }
         catch (Exception e)
@@ -226,7 +239,6 @@ public class FidoController : Controller
             {
                 FidoCredentialMakeResult =
                     new CredentialMakeResult(status: "error", errorMessage: FormatException(e), result: null),
-                // LogicSignatureProgram = null
             };
         }
     }
@@ -261,7 +273,8 @@ public class FidoController : Controller
     [Route("/assertionOptions")]
     public async Task<AssertionOptionsResponse> AssertionOptionsPost(
         [FromBody] AssertOptionsRequestModel assertionOptions,
-        string clientSessionKeyB64
+        string clientSessionKeyB64,
+        CancellationToken cancellationToken
     )
     {
         try
@@ -274,8 +287,11 @@ public class FidoController : Controller
             // 1. Get user from DB
             var user = await _db.GetUser(assertionOptions.Username) ??
                        throw new ArgumentException("Username was not registered");
+
+
             // 2. Get registered credentials from database
-            var cred = await _db.GetCredentialsByUser(user);
+            var cred = await _db.GetCredentialsByUser(user, cancellationToken);
+
             var existingCredentials = cred.Select(c => c.Descriptor).ToList();
 
             var exts = new AuthenticationExtensionsClientInputs()
@@ -284,7 +300,6 @@ public class FidoController : Controller
                 UserVerificationMethod = true,
                 DevicePubKey = new AuthenticationExtensionsDevicePublicKeyInputs()
             };
-
             // 3. Create options
             var uv = string.IsNullOrEmpty(assertionOptions.UserVerification)
                 ? UserVerificationRequirement.Discouraged

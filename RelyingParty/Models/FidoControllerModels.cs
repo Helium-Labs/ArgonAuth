@@ -1,4 +1,5 @@
-﻿using Fido2NetLib;
+﻿using System.Text.Json.Serialization;
+using Fido2NetLib;
 using Fido2NetLib.Objects;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,6 +19,14 @@ namespace RelyingParty.Models
         public string AuthType { get; set; }
         public string ResidentKey { get; set; }
         public string UserVerification { get; set; }
+        
+        /// <summary>
+        /// This extension allows a Relying Party to evaluate outputs from a pseudo-random function (PRF) associated with a credential.
+        /// https://w3c.github.io/webauthn/#prf-extension
+        /// </summary>
+        [JsonPropertyName("prf")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public AuthenticationExtensionsPRFInputs? PRF { get; set; }
     }
 
     public class AssertionResponseModel : Fido2ResponseBase

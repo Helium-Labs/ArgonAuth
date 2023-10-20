@@ -92,6 +92,15 @@ public class DWT
     {
         var rpSigned = CryptoHelper.VerifyMasterKeySignedData(hash, rpSig);
         var cspkSigned = CryptoHelper.Ed25519Verify(cspk, hash, cspkSig);
+        // Log out the hash
+        Console.WriteLine($"Hash: {Convert.ToBase64String(hash)}");
+        // log out the signings
+        Console.WriteLine($"RP Signed: {rpSigned}");
+        Console.WriteLine($"CSPK Signed: {cspkSigned}");
+        // log out cspkSig
+        Console.WriteLine($"CSPK Sig: {(cspkSig != null ? Convert.ToBase64String(cspkSig) : null)}");
+        // Log the cspk itself
+        Console.WriteLine($"CSPK: {Convert.ToBase64String(cspk)}");
         return rpSigned && cspkSigned;
     }
 
@@ -111,7 +120,6 @@ public class DWT
     // To JSON B64 encoded string, for transport in the bearer header.
     public string ToJsonB64()
     {
-        return "";
         var json = JsonSerializer.Serialize(this);
         return UtilityMethods.ToBase64String(Encoding.UTF8.GetBytes(json));
     }

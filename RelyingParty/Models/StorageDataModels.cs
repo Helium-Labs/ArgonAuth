@@ -23,7 +23,7 @@ public class StoredCredential
     /// <summary>
     /// The value returned from getTransports() when the public key credential source was registered.
     /// </summary>
-    public AuthenticatorTransport[] Transports { get; set; }
+    public AuthenticatorTransport[]? Transports { get; set; }
 
     /// <summary>
     /// The value of the BE flag when the public key credential source was created.
@@ -48,8 +48,6 @@ public class StoredCredential
     public byte[] AttestationClientDataJSON { get; set; }
 
     public List<byte[]> DevicePublicKeys { get; set; }
-
-    public byte[] UserId { get; set; }
 
     public PublicKeyCredentialDescriptor Descriptor { get; set; }
 
