@@ -1,0 +1,31 @@
+.input {
+    padding: 1rem 1rem;
+    border: 1px solid rgba(var(--card-border-rgb), 0.15);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-family: var(--font-mono);
+    background-color: rgba(var(--background-start-rgb), 1);
+    outline: none;
+    transition: border-color 200ms;
+    width: 100%;
+}
+
+.input:focus {
+    border-color: rgba(var(--card-border-rgb), 0.3);
+}
+
+.inputContainer {
+    position: relative;
+}
+
+.invalid {
+    border-color: red !important;
+}
+
+.error {
+    color: red;
+    position: absolute;
+    left: 0;
+    bottom: -20px;
+    font-size: 12px;
+}

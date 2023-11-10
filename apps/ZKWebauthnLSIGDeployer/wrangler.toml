@@ -1,0 +1,11 @@
+name = "zklsig"
+account_id = "0a3ece73d31d173e7f6c3d5bcd75a1a1"
+workers_dev = true
+route = { pattern = "", zone_id = ""}
+webpack_config = "webpack.config.js"
+compatibility_date = "2023-11-08"
+main="src/index.ts"
+[build]
+command = "npm run build"
+[dev]
+host = "localhost"
