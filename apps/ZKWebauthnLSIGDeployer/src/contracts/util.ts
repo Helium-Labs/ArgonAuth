@@ -1,6 +1,6 @@
 export const asBase64Bytes = (str: string): string => `base64(${str})`
 
-export default function getTealInstanceFromTemplateMap (templateMap: any, source: string): string {
+export default function getTealInstanceFromTemplateMap (templateMap: Record<string, string>, source: string): string {
   // get copy of source
   let instance = source.slice()
 

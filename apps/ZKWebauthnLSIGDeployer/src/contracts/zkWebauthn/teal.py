@@ -1,6 +1,7 @@
 from pyteal import *
 import sys
 import os
+from algosdk.v2client import algod
 
 lsig_version = 1
 """
@@ -18,14 +19,14 @@ Assumes client integrity. Credentials must be accessed from the same domain.
 
 def zkpassless():
     # identification
-    # credpk in (secp256r1/ES256 public key, in XY encoding)
-    tmpl_credpk = Tmpl.Bytes("TMPL_CREDPK")
-    credpk_len = Len(tmpl_credpk)
-    credpk_cond = credpk_len <= Int(64)
-    bounded_cond = credpk_cond
+    tmplCredpk = Tmpl.Bytes("TMPL_C")
+    tmplOrigin = Tmpl.Bytes("TMPL_O")
+    credpkLengthBounded = Len(tmplCredpk) <= Int(128)
+    originLengthBounded = Len(tmplOrigin) <= Int(128)
+    boundedCond = And(credpkLengthBounded, originLengthBounded)
 
     # Usual safety checks
-    safety_cond = And(
+    safetyCond = And(
         Txn.close_remainder_to() == Global.zero_address(),
         Txn.rekey_to() == Global.zero_address(),
     )
@@ -35,57 +36,92 @@ def zkpassless():
     exp = Arg(1)
     user = Arg(2)
     rand = Arg(3)
-    hash = Arg(4)
-    credSigR = Arg(5)
-    credSigS = Arg(6)
-    delgSig = Arg(7)
+    authenticatorData = Arg(4)
+    clientDataJSON = Arg(5)
+    credSigR = Arg(6)
+    credSigS = Arg(7)
+    delgSig = Arg(8)
 
-    # Verify data hasn't been tampered with
-    dat = Concat(
+    challengeB64Url = JsonRef.as_string(clientDataJSON, Bytes("challenge"))
+    challenge = Base64Decode.url(challengeB64Url)
+    origin = JsonRef.as_string(clientDataJSON, Bytes("origin"))
+    type = JsonRef.as_string(clientDataJSON, Bytes("type"))
+
+    # Check it's a webauthn.get (Assertion)
+    type = BytesEq(type, Bytes("webauthn.get"))
+
+    # Check it's coming from an approved origin
+    originCond = BytesEq(origin, tmplOrigin)
+
+    # Check challenge matches the hash of the parameters in the dwt
+    params = Concat(
         cspk,
         exp,
         user,
         rand
     )
-    hash_dat = Sha256(dat)
-    data_integrity_cond = BytesEq(hash_dat, hash)
+    challengeMatchesParamsHashCond = BytesEq(challenge, Sha256(params))
 
-    # Verify hash is signed by the bound credential public key
+    # Verify the authenticatorData
+    rpIdHash = Substring(authenticatorData, Int(0), Int(32))
+    flags = Substring(authenticatorData, Int(32), Int(33))
+    signCount = Substring(authenticatorData, Int(33), Int(37))
+    attestedCredentialDataAndExts = Substring(authenticatorData, Int(37), Len(authenticatorData))
+
+    # Assert user present
+    userPresent = GetBit(flags, Int(7))
+    userVerified = GetBit(flags, Int(5))
+    userLivenessCond = And(userPresent, userVerified)
+
+    # Credential signs (authenticatorData + sha256(clientDataJSON))
     credpk = EcdsaDecompress(
         EcdsaCurve.Secp256r1,
-        tmpl_credpk
+        tmplCredpk
     )
-    data_authentication_cond = EcdsaVerify(
+    authClientPayload = Concat(authenticatorData, Sha256(clientDataJSON))
+    challengeAuthenticationCond = EcdsaVerify(
         EcdsaCurve.Secp256r1,
-        hash,
+        Sha256(authClientPayload),
         credSigR,
         credSigS,
         credpk
     )
-
+    challengeCond = And(
+        challengeMatchesParamsHashCond,
+        challengeAuthenticationCond,
+        originCond,
+        userLivenessCond
+    )
     # Assert delegated client session key signed transaction hash.
-    cspk_approved_tx_cond = Ed25519Verify(
+    cspkApprovedTxCond = Ed25519Verify_Bare(
         Txn.tx_id(),
         delgSig,
         cspk
     )
 
     # Assert not expired
-    exp_round = Btoi(exp)
-    unexpired_cond_fv = exp_round > Txn.first_valid() 
-    unexpired_cond_lv = exp_round > Txn.last_valid()
-    unexpired_cond = And(unexpired_cond_fv, unexpired_cond_lv)
+    expRound = Btoi(exp)
+    unexpiredCondFv = expRound > Txn.first_valid()
+    unexpiredCondLV = expRound > Txn.last_valid()
+    unexpiredCond = And(unexpiredCondFv, unexpiredCondLV)
+
     return And(
-        safety_cond,
-        bounded_cond,
-        data_integrity_cond,
-        data_authentication_cond,
-        unexpired_cond,
-        cspk_approved_tx_cond
+        safetyCond,
+        boundedCond,
+        challengeCond,
+        unexpiredCond,
+        cspkApprovedTxCond
     )
 
+def algod_client():
+	algod_address= "http://localhost:4001"
+	algod_token= "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	return algod.AlgodClient(algod_token, algod_address)
+
 if __name__ == "__main__":
-    teal = compileTeal(zkpassless(), mode=Mode.Signature, version=8)
-    with open(os.path.join(sys.path[0], "teal.ts"), "w+") as f:
-        sourceCode = f"// version {lsig_version}\nexport default `{teal}`"
+    teal = compileTeal(zkpassless(), mode=Mode.Signature, version=9)
+    # Get name of this file, without the extension
+    filename = os.path.splitext(os.path.basename(__file__))[0]
+    with open(os.path.join(sys.path[0], f"{filename}.ts"), "w+") as f:
+        sourceCode = f"// version {lsig_version}\nexport default `{teal}`\n"
         f.write(sourceCode)

@@ -3,19 +3,24 @@ import {
   type PublicKeyCredentialType as PublicKeyCredentialTypeKeychain,
   type AuthenticatorAttestationRawResponse,
   type MakeCredentialsRequestModel,
-  type CredentialCreateOptions
+  type CredentialCreateOptions,
+  type DWT
 } from '@gradian/keychain-auth-server-client'
-import { isNullOrUndefined } from './util'
-import { type RegistrationResponseJSON, type AuthenticationResponseJSON, type PublicKeyCredentialDescriptorJSON, type PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/typescript-types'
+import { AssertDefined, isNullOrUndefined } from './util'
+
+import { type RegistrationResponseJSON, type AuthenticationResponseJSON, type PublicKeyCredentialDescriptorJSON, type PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/types'
+// @ts-ignore
 import { startAuthentication, startRegistration } from '@simplewebauthn/browser'
 
-export async function makeWebauthnAssertion (options: AssertionOptions): Promise<AuthenticatorAssertionRawResponse> {
+export async function makeWebauthnAssertion(options: AssertionOptions): Promise<AuthenticatorAssertionRawResponse> {
   const fidoAssertionOptions: AssertionOptions = toLower(options)
-  const allowCredentials: PublicKeyCredentialDescriptorJSON[] = fidoAssertionOptions.allowCredentials
+  const allowCredentials: PublicKeyCredentialDescriptorJSON[] = fidoAssertionOptions.allowCredentials!
     .filter((cred) => {
       return !isNullOrUndefined(cred.type) && !isNullOrUndefined(cred.id)
     })
     .map((cred) => {
+      AssertDefined(cred.id, 'cred.id must be defined')
+      AssertDefined(cred.transports, 'cred.transports must be defined')
       const result: PublicKeyCredentialDescriptorJSON = {
         id: cred.id,
         type: 'public-key',
@@ -31,10 +36,8 @@ export async function makeWebauthnAssertion (options: AssertionOptions): Promise
     userVerification: fidoAssertionOptions.userVerification,
     extensions: fidoAssertionOptions.extensions
   }
-  console.log('Assertion options updated', startAuthOptions)
+  //@ts-ignore
   const assertionResponse: AuthenticationResponseJSON = await startAuthentication(startAuthOptions)
-  console.log('Assertion response', assertionResponse)
-
   const assertionOptions: AuthenticatorAssertionRawResponse = {
     ...assertionResponse,
     type: 'PublicKey' as PublicKeyCredentialTypeKeychain
@@ -43,17 +46,29 @@ export async function makeWebauthnAssertion (options: AssertionOptions): Promise
   return assertionOptions
 }
 
-export async function makeWebauthnRegistration (createOptions: CredentialCreateOptions): Promise<MakeCredentialsRequestModel> {
+export async function makeWebauthnRegistration(
+  createOptions: CredentialCreateOptions,
+  dwt: DWT,
+  redirectUri: string,
+  state: string,
+  codeChallenge: string,
+  emailCode: string
+): Promise<MakeCredentialsRequestModel> {
   const options: CredentialCreateOptions = toLower(createOptions)
-
+  AssertDefined(options.pubKeyCredParams, 'options.pubKeyCredParams must be defined')
   const pubKeyCredParams = options.pubKeyCredParams.map((param) => {
+    AssertDefined(param.alg, 'param.alg must be defined')
     const pubkeyCredParam: PublicKeyCredentialParameters = {
       type: 'public-key',
       alg: coseAlgorithmToIdentifier(param.alg)
     }
     return pubkeyCredParam
   })
+
+  AssertDefined(options.excludeCredentials, 'options.excludeCredentials must be defined')
   const excludeCredentials = options.excludeCredentials.map((cred) => {
+    AssertDefined(cred.id, 'cred.id must be defined')
+    AssertDefined(cred.transports, 'cred.transports must be defined')
     const excludeCredential: PublicKeyCredentialDescriptorJSON = {
       id: cred.id,
       type: 'public-key',
@@ -62,39 +77,45 @@ export async function makeWebauthnRegistration (createOptions: CredentialCreateO
     return excludeCredential
   })
 
+  AssertDefined(options.user, "User must be defined")
   const registrationOptions: PublicKeyCredentialCreationOptionsJSON = {
-    rp: { id: undefined, name: options.rp.name },
+    rp: { id: undefined, name: options!.rp!.name! },
     user: {
-      id: options.user.id,
-      name: options.user.name,
-      displayName: options.user.displayName
+      id: options.user.id!,
+      name: options.user.name!,
+      displayName: options.user.displayName!
     },
-    challenge: options.challenge,
+    challenge: options.challenge!,
     pubKeyCredParams,
     timeout: options.timeout,
     excludeCredentials,
-    authenticatorSelection: options.authenticatorSelection,
+    authenticatorSelection: options.authenticatorSelection! as AuthenticatorSelectionCriteria,
     attestation: options.attestation,
-    extensions: options.extensions
+    extensions: options.extensions as AuthenticationExtensionsClientInputs
   }
-  console.log('Registration options updated', registrationOptions)
-  const registrationResponse: RegistrationResponseJSON = await startRegistration(registrationOptions)
-  console.log('Registration response', registrationResponse)
+
+  const registrationResponse: RegistrationResponseJSON =
+    await startRegistration(registrationOptions)
   const registration: AuthenticatorAttestationRawResponse =
-          registrationResponse as AuthenticatorAttestationRawResponse
+    registrationResponse as AuthenticatorAttestationRawResponse
   const makeCredentialsRequest: MakeCredentialsRequestModel = {
     attestationResponse: {
       ...registration,
       extensions: registrationResponse.clientExtensionResults,
       type: 'PublicKey' as PublicKeyCredentialTypeKeychain
     },
-    username: createOptions.user.displayName
+    username: createOptions.user!.displayName!,
+    emailCode,
+    state,
+    codeChallenge,
+    dwt,
+    redirectUri
   }
 
   return makeCredentialsRequest
 }
 
-function coseAlgorithmToIdentifier (algorithm: string): COSEAlgorithmIdentifier {
+function coseAlgorithmToIdentifier(algorithm: string): COSEAlgorithmIdentifier {
   if (algorithm == null) {
     throw new Error('COSE Algorithm is required')
   }
@@ -113,11 +134,11 @@ function coseAlgorithmToIdentifier (algorithm: string): COSEAlgorithmIdentifier 
     EdDSA: -8,
     ES256: -7
   }
-
-  return mapping[algorithm]
+  AssertDefined(mapping[algorithm], "mapping[algorithm] must be defined")
+  return mapping[algorithm]!
 }
 
-function toLower (obj: any): any {
+function toLower(obj: any): any {
   const toLowerFields = ['authenticatorAttachment', 'userVerification', 'attestation', 'residentKey']
   // convert CamelCase to dash-case, e.g. CrossPlatform -> cross-platform
   const convertToDashCaseIfCamelCase = (str: string): string => {

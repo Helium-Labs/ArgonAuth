@@ -11,22 +11,27 @@
  * https://github.com/swagger-api/swagger-codegen.git
  * Do not edit the class manually.
  */
-/**
+
+ /**
  * 
+ *
  * @export
  * @interface InlineResponse200
  */
 export interface InlineResponse200 {
+
     /**
-     * 
      * @type {any}
      * @memberof InlineResponse200
      */
     metaData: any;
+
     /**
      * Compiled teal code for the given Webauthn credential.
+     *
      * @type {any}
      * @memberof InlineResponse200
+     * @example lorem
      */
     compiledTeal: any;
 }

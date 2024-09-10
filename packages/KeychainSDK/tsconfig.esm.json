@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
+    "skipLibCheck": true,
+    "rootDir": ".",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "target": "ES2020",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ]
+  },
+  "include": [
+    "./**/*.ts" // *** The files TypeScript should type check ***
+  ],
+  "typeRoots": ["node_modules/@types", "node_modules"], // Ensure TypeScript looks for types here
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "tests",
+    "lib"
+  ]
+}

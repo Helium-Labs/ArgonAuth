@@ -11,6 +11,7 @@
  * https://github.com/swagger-api/swagger-codegen.git
  * Do not edit the class manually.
  */
+
 import globalAxios, { AxiosResponse, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { Configuration } from '../configuration';
 // Some imports not used depending on template conditions
@@ -27,16 +28,22 @@ export const WebauthnLSIGApiAxiosParamCreator = function (configuration?: Config
          * 
          * @summary Get the LSIG for a given Webauthn credential
          * @param {any} credpk 
+         * @param {any} origin 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getGetWebauthnLSIG: async (credpk: any, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getGetWebauthnLSIG: async (credpk: any, origin: any, options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'credpk' is not null or undefined
             if (credpk === null || credpk === undefined) {
                 throw new RequiredError('credpk','Required parameter credpk was null or undefined when calling getGetWebauthnLSIG.');
             }
-            const localVarPath = `/api/webauthnlsig/{credpk}`
-                .replace(`{${"credpk"}}`, encodeURIComponent(String(credpk)));
+            // verify required parameter 'origin' is not null or undefined
+            if (origin === null || origin === undefined) {
+                throw new RequiredError('origin','Required parameter origin was null or undefined when calling getGetWebauthnLSIG.');
+            }
+            const localVarPath = `/api/webauthnlsig/{credpk}/{origin}`
+                .replace(`{${"credpk"}}`, encodeURIComponent(String(credpk)))
+                .replace(`{${"origin"}}`, encodeURIComponent(String(origin)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, 'https://example.com');
             let baseOptions;
@@ -76,11 +83,12 @@ export const WebauthnLSIGApiFp = function(configuration?: Configuration) {
          * 
          * @summary Get the LSIG for a given Webauthn credential
          * @param {any} credpk 
+         * @param {any} origin 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getGetWebauthnLSIG(credpk: any, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => Promise<AxiosResponse<InlineResponse200>>> {
-            const localVarAxiosArgs = await WebauthnLSIGApiAxiosParamCreator(configuration).getGetWebauthnLSIG(credpk, options);
+        async getGetWebauthnLSIG(credpk: any, origin: any, options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => Promise<AxiosResponse<InlineResponse200>>> {
+            const localVarAxiosArgs = await WebauthnLSIGApiAxiosParamCreator(configuration).getGetWebauthnLSIG(credpk, origin, options);
             return (axios: AxiosInstance = globalAxios, basePath: string = BASE_PATH) => {
                 const axiosRequestArgs :AxiosRequestConfig = {...localVarAxiosArgs.options, url: basePath + localVarAxiosArgs.url};
                 return axios.request(axiosRequestArgs);
@@ -99,11 +107,12 @@ export const WebauthnLSIGApiFactory = function (configuration?: Configuration, b
          * 
          * @summary Get the LSIG for a given Webauthn credential
          * @param {any} credpk 
+         * @param {any} origin 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getGetWebauthnLSIG(credpk: any, options?: AxiosRequestConfig): Promise<AxiosResponse<InlineResponse200>> {
-            return WebauthnLSIGApiFp(configuration).getGetWebauthnLSIG(credpk, options).then((request) => request(axios, basePath));
+        async getGetWebauthnLSIG(credpk: any, origin: any, options?: AxiosRequestConfig): Promise<AxiosResponse<InlineResponse200>> {
+            return WebauthnLSIGApiFp(configuration).getGetWebauthnLSIG(credpk, origin, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -119,11 +128,12 @@ export class WebauthnLSIGApi extends BaseAPI {
      * 
      * @summary Get the LSIG for a given Webauthn credential
      * @param {any} credpk 
+     * @param {any} origin 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof WebauthnLSIGApi
      */
-    public async getGetWebauthnLSIG(credpk: any, options?: AxiosRequestConfig) : Promise<AxiosResponse<InlineResponse200>> {
-        return WebauthnLSIGApiFp(this.configuration).getGetWebauthnLSIG(credpk, options).then((request) => request(this.axios, this.basePath));
+    public async getGetWebauthnLSIG(credpk: any, origin: any, options?: AxiosRequestConfig) : Promise<AxiosResponse<InlineResponse200>> {
+        return WebauthnLSIGApiFp(this.configuration).getGetWebauthnLSIG(credpk, origin, options).then((request) => request(this.axios, this.basePath));
     }
 }

@@ -9,6 +9,9 @@ export class GetWebauthnLSIG extends OpenAPIRoute {
     parameters: {
       credpk: Path(Str, {
         description: 'Authenticator Credential Public Key (ES256), in compressed form.'
+      }),
+      origin: Path(Str, {
+        description: 'The origin of the Webauthn credential.'
       })
     },
     responses: {
@@ -24,11 +27,10 @@ export class GetWebauthnLSIG extends OpenAPIRoute {
 
   async handle (request: Request, env: any, context: any, data: any): Promise<any> {
     // Retrieve the validated slug
-    const { credpk } = data.params
-
+    const { credpk, origin } = data.params
     const credPKXYB64 = base64urlToBase64(credpk)
-    const lsig: string = await getZKWebauthnLSIGInstance(credPKXYB64)
-
+    const originB64 = base64urlToBase64(origin)
+    const lsig: string = await getZKWebauthnLSIGInstance(credPKXYB64, originB64)
     return {
       metaData: {},
       compiledTeal: lsig

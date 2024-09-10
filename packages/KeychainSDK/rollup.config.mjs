@@ -1,68 +1,58 @@
-// import typescript from "@rollup/plugin-typescript";
-import { nodeResolve } from '@rollup/plugin-node-resolve'
-import commonjs from '@rollup/plugin-commonjs'
-import json from '@rollup/plugin-json'
-import nodePolyfills from 'rollup-plugin-polyfill-node'
-import typescript from 'rollup-plugin-typescript2'
-import terser from '@rollup/plugin-terser'
-
-const nodeBuiltIns = ['assert', 'buffer', 'child_process', 'cluster', 'console', 'constants', 'crypto', 'dgram', 'dns', 'domain', 'events', 'fs', 'http', 'https', 'module', 'net', 'os', 'path', 'process', 'punycode', 'querystring', 'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tls', 'tty', 'url', 'util', 'v8', 'vm', 'zlib']
+import { nodeResolve } from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import json from "@rollup/plugin-json";
+import nodePolyfills from "rollup-plugin-polyfill-node";
+import typescript from 'rollup-plugin-typescript2';
 
 export default [
   // Browser config
   {
-    input: 'src/index.ts',
+    input: "src/index.ts",
     output: [
       {
-        file: 'dist/bundle.mjs',
-        format: 'es',
-        inlineDynamicImports: true
-      }
+        file: "dist/bundle.mjs",
+        format: "es",
+        inlineDynamicImports: true,
+      },
     ],
-    external: ['buffer'],
     plugins: [
+      json(),
+      commonjs(),
       nodeResolve({
         preferBuiltins: true,
         browser: true,
-        modulesOnly: false
+        modulesOnly: false,
       }),
       typescript({
-        tsconfig: './tsconfig.json',
+        tsconfig: "./tsconfig.esm.json",
         declaration: true,
-        declarationDir: 'dist'
+        declarationDir: "dist"
       }),
-      // nodePolyfills(),
-      commonjs(),
-      terser({
-        maxWorkers: 4
-      })
+      nodePolyfills(),
     ],
-    external: ['axios', 'algosdk', '@json-rpc-tools/utils']
+    external: ["algosdk", "@json-rpc-tools/utils"],
   },
   // Node config
   {
-    input: 'src/index.ts',
+    input: "src/index.ts",
     output: [
       {
-        file: 'dist/bundle.cjs',
-        format: 'cjs'
-      }
+        dir: "dist/cjs",
+        format: "cjs",
+      },
     ],
-    external: ['algosdk', '@json-rpc-tools/utils', ...nodeBuiltIns],
+    external: ["algosdk", "@json-rpc-tools/utils"],
     plugins: [
+      json(),
+      commonjs(),
       nodeResolve({
-        preferBuiltins: false
+        preferBuiltins: true,
       }),
       typescript({
-        tsconfig: './tsconfigCJS.json',
+        tsconfig: "./tsconfig.cjs.json",
         declaration: true,
-        declarationDir: 'dist'
-      }),
-      commonjs(),
-      json(),
-      terser({
-        maxWorkers: 4
+        declarationDir: "dist"
       })
-    ]
-  }
-]
+    ],
+  },
+];

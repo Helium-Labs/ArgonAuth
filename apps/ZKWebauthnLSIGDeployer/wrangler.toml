@@ -4,6 +4,7 @@ workers_dev = true
 route = { pattern = "", zone_id = ""}
 webpack_config = "webpack.config.js"
 compatibility_date = "2023-11-08"
+compatibility_flags = [ "nodejs_compat" ]
 main="src/index.ts"
 [build]
 command = "npm run build"
