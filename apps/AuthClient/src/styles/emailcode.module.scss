@@ -1,0 +1,13 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+.emailcodeContainer {
+  @apply h-screen flex flex-col justify-center items-center fixed left-0 top-0 right-0 bottom-0;
+  // You can also use SCSS syntax here
+  display: absolute !important;
+  left: 0;
+  top: 0 !important;
+  right: 0;
+  bottom: 0;
+}

@@ -1,0 +1,23 @@
+{
+  "Version": 1,
+  "Hash": "p2u7L0BRbJkdS266jpXqfu0Wnw8Z/Hmn6fKLb/Dj894=",
+  "Source": "RelyingParty.Tests",
+  "BasePath": "_content/RelyingParty.Tests",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [
+    {
+      "Identity": "/home/winton/Documents/Keychain/Keychain/Argon/apps/RelyingPartyServer/RelyingParty/RelyingParty.csproj",
+      "Version": 2,
+      "Source": "RelyingParty",
+      "GetPublishAssetsTargets": "ComputeReferencedStaticWebAssetsPublishManifest;GetCurrentProjectPublishStaticWebAssetItems",
+      "AdditionalPublishProperties": "Configuration=Debug;Platform=AnyCPU",
+      "AdditionalPublishPropertiesToRemove": "WebPublishProfileFile;TargetFramework;RuntimeIdentifier;SelfContained",
+      "GetBuildAssetsTargets": "GetCurrentProjectBuildStaticWebAssetItems",
+      "AdditionalBuildProperties": "Configuration=Debug;Platform=AnyCPU",
+      "AdditionalBuildPropertiesToRemove": "WebPublishProfileFile;TargetFramework;RuntimeIdentifier;SelfContained"
+    }
+  ],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

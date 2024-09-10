@@ -1,0 +1,12 @@
+node_modules
+!.*
+dist
+build
+.next
+next.config.js
+src/**/*.test.ts
+**/.storybook/**/*.ts
+**/*.d.ts
+craco.config.js
+tailwind.config.js
+.wrangler
