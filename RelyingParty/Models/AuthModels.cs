@@ -1,6 +1,6 @@
-﻿using System.Text;
+﻿using RelyingParty.Utilities;
+using System.Text;
 using System.Text.Json;
-using RelyingParty.Utilities;
 
 namespace RelyingParty.Models;
 
@@ -9,6 +9,9 @@ public class DWT
 {
     // Client Session Public Key
     public byte[] cspk { get; set; }
+
+    // Webauthn Authenticator Public Key
+    public byte[]? credpk { get; set; }
 
     // Expiration Time in Unix Seconds
     public ulong exp { get; set; }
@@ -21,11 +24,16 @@ public class DWT
 
     // A B64 SHA256 hash of the DWT
     public byte[] hash => Hash();
-
-    // Signatures of the hash of DWT, to prove claims have been signed by the respective authorities
-    public byte[]? cspkSig { get; set; }
-    public byte[]? rpSig { get; set; }
-
+    
+    // ASN1DEREncodedSignature Assertion signature (only during assertion, filled client side only)
+    public byte[]? credSig { get; set; }
+    
+    // Autheneticator data authenticatorData (only during assertion, filled client side only)
+    public byte[]? authenticatorData { get; set; }
+    
+    // clientDataJSON (only during assertion, filled client side only)
+    public byte[]? clientDataJSON { get; set; }
+    
     // Initializer
     public DWT(byte[] cspk, ulong exp, string user, byte[] credId, string rand)
     {
@@ -52,7 +60,7 @@ public class DWT
     // Initializer supplying only cspk and credentialID
     public DWT(string cspkB64, string user)
     {
-        this.cspk = Convert.FromBase64String(cspkB64);
+        cspk = Convert.FromBase64String(cspkB64);
         this.user = user;
         // Generate JWT lifetime of 12 hours by default
         var expUnixSeconds = UtilityMethods.GetCurrentUnixTimeInSeconds();
@@ -74,34 +82,34 @@ public class DWT
         // Hash the DIDT
         var dwt = Array.Empty<byte>();
         dwt = dwt.Concat(cspk).ToArray();
-        dwt = dwt.Concat(BitConverter.GetBytes(exp)).ToArray();
+        dwt = dwt.Concat(UtilityMethods.EncodeUint64(exp)).ToArray();
         dwt = dwt.Concat(Encoding.UTF8.GetBytes(user)).ToArray();
         dwt = dwt.Concat(Convert.FromBase64String(rand)).ToArray();
-        var dwtB64 = UtilityMethods.ToBase64String(dwt);
         // To base64 string
-        return UtilityMethods.ComputeSHA256Hash(dwtB64);
+        return UtilityMethods.ComputeSHA256Hash(dwt);
     }
 
-    public void FillRpSign(byte[] signature)
+    public void SetCredPk(byte[] credPk)
     {
-        rpSig = signature;
+        credpk = credPk;
     }
 
     // Verify if this DWT (its hash) has been signed by the RP and CSPK
     public bool IsValid()
     {
-        var rpSigned = CryptoHelper.VerifyMasterKeySignedData(hash, rpSig);
-        var cspkSigned = CryptoHelper.Ed25519Verify(cspk, hash, cspkSig);
-        // Log out the hash
-        Console.WriteLine($"Hash: {Convert.ToBase64String(hash)}");
-        // log out the signings
-        Console.WriteLine($"RP Signed: {rpSigned}");
-        Console.WriteLine($"CSPK Signed: {cspkSigned}");
-        // log out cspkSig
-        Console.WriteLine($"CSPK Sig: {(cspkSig != null ? Convert.ToBase64String(cspkSig) : null)}");
-        // Log the cspk itself
-        Console.WriteLine($"CSPK: {Convert.ToBase64String(cspk)}");
-        return rpSigned && cspkSigned;
+        // Check fields are not null
+        if (cspk == null || exp == 0 || user == null || rand == null)
+        {
+            return false;
+        }
+        // check exp is no more than 12 hours in the future
+        var now = UtilityMethods.GetCurrentUnixTimeInSeconds();
+        if (exp < now || exp > now + 43200)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     // From JSON Base64 encoded string, for transport in the bearer header.
@@ -122,5 +130,21 @@ public class DWT
     {
         var json = JsonSerializer.Serialize(this);
         return UtilityMethods.ToBase64String(Encoding.UTF8.GetBytes(json));
+    }
+    
+    // Return Dictionary<string, object> for JWT construction
+    public Dictionary<string, object> ToDictionary()
+    {
+        var dict = new Dictionary<string, object>();
+        dict.Add("cspk", cspk);
+        dict.Add("exp", exp);
+        dict.Add("user", user);
+        dict.Add("rand", rand);
+        dict.Add("hash", hash);
+        dict.Add("credpk", credpk);
+        dict.Add("credSig", credSig);
+        dict.Add("authenticatorData", authenticatorData);
+        dict.Add("clientDataJSON", clientDataJSON);
+        return dict;
     }
 }

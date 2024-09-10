@@ -59,3 +59,18 @@ public class StoredCredential
 
     public Guid AaGuid { get; set; }
 }
+public class AuthExchange
+{
+    public string JwtClaims { get; set; }
+    public string State { get; set; }
+    public string CodeChallenge { get; set; }
+    // ... include other fields as necessary ...
+}
+
+// Define the model for an email verification entry
+public class EmailVerification
+{
+    public string Email { get; set; }
+    public string CodeHash { get; set; }
+    public DateTime Timestamp { get; set; }
+}

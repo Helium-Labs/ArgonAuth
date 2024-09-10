@@ -1,10 +1,12 @@
-using System.Data;
-using System.Text;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using RelyingParty.Models;
+using System.Data;
+using System.Text;
+using RelyingParty.Utilities;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace RelyingParty.Data;
 
@@ -22,6 +24,75 @@ public class PlanetScaleDatabase
         var conn = new MySqlConnection(_connectionString);
         await conn.OpenAsync(cancellationToken);
         return conn;
+    }
+
+    public async Task InsertAuthExchange(string username, Dictionary<string, object> jwtClaims, string codeHashB64, string state, string codeChallenge)
+    {
+        string jwtClaimsJson = JsonSerializer.Serialize(jwtClaims);
+
+        await using var conn = await GetMySqlConnection();
+        const string insertQuery = @"
+            INSERT INTO auth_exchanges (code_hash, jwt_claims, username, state, code_challenge)
+            VALUES (@codeHash, @jwt_claims, @username, @state, @codeChallenge);
+        ";
+        
+        await using var insertCmd = new MySqlCommand(insertQuery, conn);
+        insertCmd.Parameters.AddWithValue("@username", username);
+        insertCmd.Parameters.AddWithValue("@jwt_claims", jwtClaimsJson);
+        insertCmd.Parameters.AddWithValue("@codeHash", codeHashB64);
+        insertCmd.Parameters.AddWithValue("@state", state);
+        insertCmd.Parameters.AddWithValue("@codeChallenge", codeChallenge);
+
+        await insertCmd.ExecuteNonQueryAsync();
+    }
+    
+    public async Task<AuthExchange?> GetAuthExchangeIfValid(string codeHashB64)
+    {
+        await using var conn = await GetMySqlConnection();
+        const string selectQuery = @"
+    SELECT jwt_claims, state, code_challenge, timestamp
+    FROM auth_exchanges
+    WHERE code_hash = @codeHash;";
+
+        await using var selectCmd = new MySqlCommand(selectQuery, conn);
+        selectCmd.Parameters.AddWithValue("@codeHash", codeHashB64);
+
+        AuthExchange? authExchange = null;
+    
+        // Use the using statement to ensure the reader is closed after use
+        await using (var reader = await selectCmd.ExecuteReaderAsync())
+        {
+            if (await reader.ReadAsync())
+            {
+                var timestamp = reader.GetDateTime("timestamp");
+                if (DateTime.UtcNow - timestamp > TimeSpan.FromMinutes(5))
+                {
+                    return null;
+                }
+
+                authExchange = new AuthExchange
+                {
+                    JwtClaims = reader.GetString("jwt_claims"),
+                    State = reader.GetString("state"),
+                    CodeChallenge = reader.GetString("code_challenge")
+                    // ... set other fields as necessary ...
+                };
+            }
+        } // The reader is closed/disposed at the end of the using block
+
+        // Perform the DELETE operation only if an authExchange was found
+        if (authExchange != null)
+        {
+            const string deleteQuery = @"
+        DELETE FROM auth_exchanges
+        WHERE code_hash = @codeHash;";
+
+            await using var deleteCmd = new MySqlCommand(deleteQuery, conn);
+            deleteCmd.Parameters.AddWithValue("@codeHash", codeHashB64);
+            await deleteCmd.ExecuteNonQueryAsync();
+        }
+
+        return authExchange; // Returns either the populated authExchange or null
     }
 
     private async Task<List<Fido2User>> ExecuteSqlCommandAndGetUsersAsync(MySqlCommand cmd,
@@ -91,8 +162,6 @@ public class PlanetScaleDatabase
         cmd.Parameters.AddWithValue("@user_handle_b64", Convert.ToBase64String(user.Id));
 
         var credentials = await ReadCredentialsAsync(cmd, cancellationToken);
-        // Log the credentials as a JSON string
-        Console.WriteLine("Credentials: " + JsonConvert.SerializeObject(credentials));
         return credentials;
     }
 
@@ -357,23 +426,51 @@ public class PlanetScaleDatabase
         cmd.Parameters.AddWithValue("@credential_id_b64", idB64);
         await cmd.ExecuteNonQueryAsync();
     }
-
-    // select the Didt where the user_id is the user's ID.
-    public async Task<LSIGSign.Models.SignedDidt?> GetSignedDidt(byte[] credentialId)
+    
+    public async Task<EmailVerification?> GetEmailVerification(string email)
     {
         await using var conn = await GetMySqlConnection();
+        const string query = @"
+            SELECT code_hash, timestamp
+            FROM email_verification_codes
+            WHERE email = @email;
+        ";
 
-        await using var cmd = new MySqlCommand("SELECT * FROM DIDT WHERE credential_id = @credential_id", conn);
-        cmd.Parameters.AddWithValue("@credential_id", credentialId);
-        await using var reader = cmd.ExecuteReader();
-        if (reader.Read())
+        await using var cmd = new MySqlCommand(query, conn);
+        cmd.Parameters.AddWithValue("@email", email);
+
+        EmailVerification? result = null;
+        await using (var reader = await cmd.ExecuteReaderAsync())
         {
-            var didt = (byte[])reader["didt"];
-            var signature = (byte[])reader["signature"];
-            var signedDidt = new LSIGSign.Models.SignedDidt(didt, signature);
-            return signedDidt;
+            if (await reader.ReadAsync())
+            {
+                result = new EmailVerification 
+                {
+                    Email = email,
+                    CodeHash = reader.GetString("code_hash"),
+                    Timestamp = reader.GetDateTime("timestamp")
+                };
+            }
         }
 
-        return null;
+        return result;
+    }
+
+    public async Task InsertEmailVerification(string email, string code)
+    {
+        // Hash the code before storing in the database
+        string codeHash = Convert.ToBase64String(UtilityMethods.ComputeSHA256Hash(Encoding.UTF8.GetBytes(code)));
+
+        await using var conn = await GetMySqlConnection();
+        const string insertQuery = @"
+            INSERT INTO email_verification_codes (email, code_hash)
+            VALUES (@email, @code_hash);
+        ";
+
+        await using var cmd = new MySqlCommand(insertQuery, conn);
+        cmd.Parameters.AddWithValue("@email", email);
+        cmd.Parameters.AddWithValue("@code_hash", codeHash);
+
+        await cmd.ExecuteNonQueryAsync();
     }
 }

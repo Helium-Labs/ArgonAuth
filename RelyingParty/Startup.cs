@@ -1,10 +1,8 @@
-using Algorand.Algod;
-using Algorand;
-using RelyingParty.Algorand.ServerAccount;
-using System.Text.Json.Serialization;
-using Algorand.KMD;
-using Microsoft.AspNetCore.StaticFiles;
 using RelyingParty.Data;
+using System.Text.Json.Serialization;
+using Amazon.SimpleSystemsManagement;
+using RelyingParty.JWT;
+using RelyingParty.Middleware;
 
 namespace RelyingParty;
 
@@ -20,13 +18,18 @@ public class Startup
     // This method gets called by the runtime. Use this method to add services to the container
     public void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<ParameterStoreService>();
+        services.AddAWSService<IAmazonSimpleSystemsManagement>();
+        services.AddSingleton<JwtManager>();
+        services.AddHttpClient<IEmailService, EmailService>();
+
         // Add CORS services and configure the policy
         services.AddCors(options =>
         {
             options.AddPolicy("AllowSpecificOrigins",
                 builder =>
                 {
-                    builder.WithOrigins("https://keychain-client-zeta.vercel.app", "http://localhost:7123")
+                    builder.WithOrigins("http://localhost:7123", "http://localhost:8123", "http://localhost:5173")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials(); // Allow credentials explicitly
@@ -60,27 +63,7 @@ public class Startup
         //Algod
         string host = Configuration["AlgodHTTPApi:host"];
         string token = Configuration["AlgodHTTPApi:token"];
-        services.AddSingleton<IDefaultApi>(SetUpAlgodConnection(host, token));
-        services.AddSingleton<IApi>(SetupKmdApi());
-
-        services.AddFido2(options =>
-            {
-                options.ServerDomain = Configuration["fido2:serverDomain"];
-                options.ServerName = "FIDO2 Test";
-                options.Origins = Configuration.GetSection("fido2:origins").Get<HashSet<string>>();
-                options.TimestampDriftTolerance = Configuration.GetValue<int>("fido2:timestampDriftTolerance");
-                options.MDSCacheDirPath = Configuration["fido2:MDSCacheDirPath"];
-            })
-            .AddCachedMetadataService(config =>
-            {
-                config.AddFidoMetadataRepository(httpClientBuilder =>
-                {
-                    //TODO: any specific config you want for accessing the MDS
-                });
-            });
-
-        services.AddScoped<IMasterAccount, MasterAccount>();
-
+            
         services.AddOpenApiDocument(configure =>
         {
             configure.Version = "v1";
@@ -95,26 +78,6 @@ public class Startup
         services.AddSwaggerGen();
     }
 
-    private DefaultApi SetUpAlgodConnection(string host, string token)
-    {
-        //A standard sandbox connection
-        var httpClient = HttpClientConfigurator.ConfigureHttpClient(@host, token);
-        var algodApiInstance = new DefaultApi(httpClient);
-        return algodApiInstance;
-    }
-
-    private Api SetupKmdApi()
-    {
-        var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("X-KMD-API-Token",
-            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-
-        Api kmdApi = new Api(client);
-        kmdApi.BaseUrl = @"http://localhost:4002";
-
-        return kmdApi;
-    }
-
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
@@ -122,7 +85,6 @@ public class Startup
         {
             app.UseDeveloperExceptionPage();
         }
-
         app.UseSession();
         app.UseStaticFiles();
         app.UseHttpsRedirection();

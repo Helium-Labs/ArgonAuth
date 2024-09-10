@@ -16,9 +16,11 @@
     <Compile Remove="wwwroot\v1\**" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AlgoStudio" Version="1.1.51" />
     <PackageReference Include="Amazon.Lambda.AspNetCoreServer" Version="8.1.0" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.300" />
+    <PackageReference Include="AWSSDK.SimpleSystemsManagement" Version="3.7.301.3" />
     <PackageReference Include="Fido2.AspNet" Version="4.0.0-beta4" />
+    <PackageReference Include="JWT" Version="10.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
     <PackageReference Include="MySql.Data" Version="8.1.0" />
     <PackageReference Include="NSwag.AspNetCore" Version="13.19.0" />
