@@ -1,0 +1,29 @@
+service: relyingparty
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: dotnet6
+  region: us-east-1
+
+package:
+  individually: true
+
+functions:
+  api:
+    handler: RelyingParty::RelyingParty.LambdaEntryPoint::FunctionHandlerAsync
+    package:
+      artifact: bin/release/net6.0/RelyingParty.zip
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors:
+            origin: '*'
+            headers: '*'
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors:
+            origin: '*'
+            headers: '*'

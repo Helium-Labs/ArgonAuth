@@ -1,0 +1,62 @@
+# .gitignore for ASP.NET Core Web project
+
+# Build and publish directories
+bin/
+obj/
+publish/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio temporary files, build results, and debug specific files
+**/Debug/
+**/Release/
+.vs/
+*.opendb
+*.dbmdl
+*.jfm
+*.svclog
+*.cache
+
+# ReSharper files
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# JustCode cache files
+*.T4
+*.T4.CSPROJ
+*.JustCode
+
+# TeamCity - Uncomment if you have issues with building in TeamCity
+#_TeamCity*
+
+# Azure Functions localsettings file
+local.settings.json
+
+# NCrunch
+*_ncrunch_solutions/*.sln
+*.ncrunchsolution
+*_ncrunch_files/
+*.ncrunchproject
+
+# Rider
+.idea/
+
+# Visual Studio Code - Uncomment if you don't want to share your VS Code settings
+# .vscode/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# .NET Core secret storage
+*.secret*
+
+# User-specific secrets
+secrets.json
+
+# Temporary folder (tmp)
+tmp/
